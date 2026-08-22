@@ -1,0 +1,2 @@
+# Acquisition uses Python stdlib only. PyArrow is required for final Parquet output.
+pyarrow>=15,<25

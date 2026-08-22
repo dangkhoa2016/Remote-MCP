@@ -1,0 +1,61 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qwen3-embedding-8b-t4x2-kaggle"
+version = "1.0.0"
+description = "Offline-first dual-T4 Qwen3-Embedding-8B REST and bilingual semantic-search demo for Kaggle"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [{name = "Đăng Khoa", email = "i.am@dangkhoa.dev"}]
+keywords = ["qwen3", "embeddings", "semantic-search", "kaggle", "multi-gpu", "fastapi", "wikidata"]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+  "torch>=2.2",
+  "fastapi>=0.115,<1",
+  "pydantic>=2.8,<3",
+  "numpy>=1.26,<3",
+]
+
+[project.optional-dependencies]
+dataset = [
+  "pyarrow>=15,<25",
+]
+kaggle = [
+  "transformers>=5.0.0,<6",
+  "accelerate>=1.3,<2",
+  "bitsandbytes>=0.45,<1",
+  "safetensors>=0.4.5,<1",
+  "uvicorn[standard]>=0.30,<1",
+  "httpx>=0.27,<1",
+  "faiss-cpu>=1.8,<2",
+  "pyarrow>=15,<25",
+]
+test = [
+  "pytest>=8,<9",
+  "pytest-asyncio>=0.23,<2",
+  "httpx>=0.27,<1",
+]
+
+[tool.setuptools.packages.find]
+include = ["app*", "dataset*", "benchmark*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[project.urls]
+Homepage = "https://github.com/dangkhoa2016/Qwen3-Embedding-8B-On-T4x2-GPU"
+Repository = "https://github.com/dangkhoa2016/Qwen3-Embedding-8B-On-T4x2-GPU"
+Issues = "https://github.com/dangkhoa2016/Qwen3-Embedding-8B-On-T4x2-GPU/issues"

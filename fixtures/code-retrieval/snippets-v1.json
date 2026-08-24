@@ -1,0 +1,125 @@
+{
+  "version": "code-retrieval-v1",
+  "snippets": [
+    {
+      "id": "python-json-parse",
+      "language": "python",
+      "text": "import json\nvalue = json.loads(payload)"
+    },
+    {
+      "id": "python-json-dump",
+      "language": "python",
+      "text": "payload = json.dumps(value, ensure_ascii=False)"
+    },
+    {
+      "id": "python-backoff",
+      "language": "python",
+      "text": "delay = min(cap, base * (2 ** attempt))"
+    },
+    {
+      "id": "python-nfc",
+      "language": "python",
+      "text": "import unicodedata\ntext = unicodedata.normalize(\"NFC\", text)"
+    },
+    {
+      "id": "python-semaphore",
+      "language": "python",
+      "text": "sem = asyncio.Semaphore(limit)\nasync with sem:\n    await work()"
+    },
+    {
+      "id": "python-binary-search",
+      "language": "python",
+      "text": "idx = bisect.bisect_left(values, target)"
+    },
+    {
+      "id": "python-bearer",
+      "language": "python",
+      "text": "header = request.headers.get(\"Authorization\")\nif header != f\"Bearer {token}\":\n    raise Unauthorized()"
+    },
+    {
+      "id": "python-sha256",
+      "language": "python",
+      "text": "digest = hashlib.sha256(data).hexdigest()"
+    },
+    {
+      "id": "python-read-json",
+      "language": "python",
+      "text": "data = json.loads(Path(path).read_text(encoding=\"utf-8\"))"
+    },
+    {
+      "id": "python-write-json",
+      "language": "python",
+      "text": "Path(path).write_text(json.dumps(data, indent=2), encoding=\"utf-8\")"
+    },
+    {
+      "id": "python-async-gather",
+      "language": "python",
+      "text": "results = await asyncio.gather(*(run(item) for item in items))"
+    },
+    {
+      "id": "python-context-manager",
+      "language": "python",
+      "text": "with resource() as handle:\n    handle.write(data)"
+    },
+    {
+      "id": "python-dedup",
+      "language": "python",
+      "text": "unique = list(dict.fromkeys(items))"
+    },
+    {
+      "id": "python-env",
+      "language": "python",
+      "text": "value = os.environ.get(\"WORKER_COUNT\", \"2\")"
+    },
+    {
+      "id": "python-http-post",
+      "language": "python",
+      "text": "response = client.post(url, json=payload)\nresponse.raise_for_status()"
+    },
+    {
+      "id": "python-retry-after",
+      "language": "python",
+      "text": "retry_after = response.headers.get(\"Retry-After\")"
+    },
+    {
+      "id": "python-l2-normalize",
+      "language": "python",
+      "text": "vector = vector / np.linalg.norm(vector)"
+    },
+    {
+      "id": "python-topk",
+      "language": "python",
+      "text": "order = np.argsort(-scores)[:top_k]"
+    },
+    {
+      "id": "python-lock",
+      "language": "python",
+      "text": "with lock:\n    shared_count += 1"
+    },
+    {
+      "id": "python-tempfile",
+      "language": "python",
+      "text": "with tempfile.TemporaryDirectory() as tmp:\n    path = Path(tmp)"
+    },
+    {
+      "id": "bash-strict-mode",
+      "language": "bash",
+      "text": "set -Eeuo pipefail"
+    },
+    {
+      "id": "bash-sha-check",
+      "language": "bash",
+      "text": "sha256sum -c SHA256SUMS"
+    },
+    {
+      "id": "js-json-parse",
+      "language": "javascript",
+      "text": "const value = JSON.parse(payload);"
+    },
+    {
+      "id": "js-fetch",
+      "language": "javascript",
+      "text": "const response = await fetch(url, { method: \"POST\" });"
+    }
+  ]
+}

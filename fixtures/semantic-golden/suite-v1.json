@@ -1,0 +1,225 @@
+{
+  "version": "semantic-golden-v1",
+  "cases": [
+    {
+      "id": "vi-current-capital-germany",
+      "query": "thủ đô hiện nay của Đức",
+      "language": "vi",
+      "expected_qids": [
+        "Q64"
+      ],
+      "top_k": 10,
+      "category": "current-vs-historical",
+      "rationale": "Current-capital canary that distinguishes Berlin from historical Bonn."
+    },
+    {
+      "id": "en-former-capital-west-germany",
+      "query": "former capital of West Germany",
+      "language": "en",
+      "expected_qids": [
+        "Q586"
+      ],
+      "top_k": 10,
+      "category": "historical",
+      "rationale": "Historical-capital query expected to resolve Bonn."
+    },
+    {
+      "id": "en-capital-france",
+      "query": "capital of France",
+      "language": "en",
+      "expected_qids": [
+        "Q90"
+      ],
+      "top_k": 10,
+      "category": "direct-factual",
+      "rationale": "Direct factual city retrieval."
+    },
+    {
+      "id": "vi-capital-vietnam",
+      "query": "thủ đô của Việt Nam",
+      "language": "vi",
+      "expected_qids": [
+        "Q1858"
+      ],
+      "top_k": 10,
+      "category": "cross-lingual-city",
+      "rationale": "Vietnamese query for Hanoi entity."
+    },
+    {
+      "id": "en-nyc-alias",
+      "query": "NYC",
+      "language": "en",
+      "expected_qids": [
+        "Q60"
+      ],
+      "top_k": 10,
+      "category": "alias",
+      "rationale": "Common alias should resolve New York City."
+    },
+    {
+      "id": "vi-python-language",
+      "query": "ngôn ngữ lập trình Python",
+      "language": "vi",
+      "expected_qids": [
+        "Q28865"
+      ],
+      "top_k": 10,
+      "category": "programming-language",
+      "rationale": "Vietnamese programming-language query."
+    },
+    {
+      "id": "en-java-language",
+      "query": "Java programming language",
+      "language": "en",
+      "expected_qids": [
+        "Q251"
+      ],
+      "top_k": 10,
+      "category": "programming-language",
+      "rationale": "Disambiguates Java language from island/coffee."
+    },
+    {
+      "id": "en-linux-os",
+      "query": "Linux operating system",
+      "language": "en",
+      "expected_qids": [
+        "Q388"
+      ],
+      "top_k": 10,
+      "category": "software",
+      "rationale": "Software/OS retrieval."
+    },
+    {
+      "id": "vi-microsoft-company",
+      "query": "công ty Microsoft",
+      "language": "vi",
+      "expected_qids": [
+        "Q2283"
+      ],
+      "top_k": 10,
+      "category": "organization",
+      "rationale": "Vietnamese organization query."
+    },
+    {
+      "id": "en-apple-tech-company",
+      "query": "Apple technology company",
+      "language": "en",
+      "expected_qids": [
+        "Q312"
+      ],
+      "top_k": 10,
+      "category": "similar-name-disambiguation",
+      "rationale": "Disambiguates Apple Inc. from fruit and other entities."
+    },
+    {
+      "id": "en-oxford-university",
+      "query": "University of Oxford",
+      "language": "en",
+      "expected_qids": [
+        "Q34433"
+      ],
+      "top_k": 10,
+      "category": "university",
+      "rationale": "Direct university entity."
+    },
+    {
+      "id": "vi-harvard-university",
+      "query": "Đại học Harvard",
+      "language": "vi",
+      "expected_qids": [
+        "Q13371"
+      ],
+      "top_k": 10,
+      "category": "university",
+      "rationale": "Vietnamese university query."
+    },
+    {
+      "id": "en-einstein-short",
+      "query": "Einstein",
+      "language": "en",
+      "expected_qids": [
+        "Q937"
+      ],
+      "top_k": 10,
+      "category": "short-vague-person",
+      "rationale": "Short surname-only person query."
+    },
+    {
+      "id": "en-einstein-long",
+      "query": "physicist who developed the theory of relativity",
+      "language": "en",
+      "expected_qids": [
+        "Q937"
+      ],
+      "top_k": 10,
+      "category": "long-descriptive-person",
+      "rationale": "Descriptive query without explicit name."
+    },
+    {
+      "id": "vi-marie-curie",
+      "query": "nhà khoa học Marie Curie",
+      "language": "vi",
+      "expected_qids": [
+        "Q7186"
+      ],
+      "top_k": 10,
+      "category": "person",
+      "rationale": "Vietnamese person query."
+    },
+    {
+      "id": "en-artificial-intelligence",
+      "query": "artificial intelligence",
+      "language": "en",
+      "expected_qids": [
+        "Q11660"
+      ],
+      "top_k": 10,
+      "category": "scientific-concept",
+      "rationale": "Direct scientific/technical concept."
+    },
+    {
+      "id": "vi-computer-science",
+      "query": "khoa học máy tính",
+      "language": "vi",
+      "expected_qids": [
+        "Q21198"
+      ],
+      "top_k": 10,
+      "category": "scientific-discipline",
+      "rationale": "Vietnamese discipline query."
+    },
+    {
+      "id": "vi-ho-chi-minh-city",
+      "query": "Thành phố Hồ Chí Minh",
+      "language": "vi",
+      "expected_qids": [
+        "Q1854"
+      ],
+      "top_k": 10,
+      "category": "city",
+      "rationale": "Vietnamese direct city entity."
+    },
+    {
+      "id": "en-germany-entity",
+      "query": "Germany",
+      "language": "en",
+      "expected_qids": [
+        "Q183"
+      ],
+      "top_k": 10,
+      "category": "direct-entity",
+      "rationale": "Direct country entity."
+    },
+    {
+      "id": "vi-france-entity",
+      "query": "nước Pháp",
+      "language": "vi",
+      "expected_qids": [
+        "Q142"
+      ],
+      "top_k": 10,
+      "category": "cross-lingual-entity",
+      "rationale": "Vietnamese country query for France."
+    }
+  ]
+}

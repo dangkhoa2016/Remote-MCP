@@ -1,0 +1,89 @@
+{
+  "version": "code-retrieval-v1",
+  "queries": [
+    {
+      "id": "q-json",
+      "query": "parse a JSON string in Python",
+      "expected_ids": [
+        "python-json-parse"
+      ]
+    },
+    {
+      "id": "q-backoff",
+      "query": "calculate exponential retry backoff",
+      "expected_ids": [
+        "python-backoff"
+      ]
+    },
+    {
+      "id": "q-nfc",
+      "query": "normalize Unicode text to NFC",
+      "expected_ids": [
+        "python-nfc"
+      ]
+    },
+    {
+      "id": "q-semaphore",
+      "query": "limit async concurrency with a semaphore",
+      "expected_ids": [
+        "python-semaphore"
+      ]
+    },
+    {
+      "id": "q-binary",
+      "query": "binary search a sorted Python list",
+      "expected_ids": [
+        "python-binary-search"
+      ]
+    },
+    {
+      "id": "q-bearer",
+      "query": "validate a Bearer authorization header",
+      "expected_ids": [
+        "python-bearer"
+      ]
+    },
+    {
+      "id": "q-sha",
+      "query": "calculate a SHA-256 hex digest",
+      "expected_ids": [
+        "python-sha256"
+      ]
+    },
+    {
+      "id": "q-http",
+      "query": "send an HTTP POST request with JSON",
+      "expected_ids": [
+        "python-http-post"
+      ]
+    },
+    {
+      "id": "q-normalize",
+      "query": "L2 normalize a numerical vector",
+      "expected_ids": [
+        "python-l2-normalize"
+      ]
+    },
+    {
+      "id": "q-topk",
+      "query": "select the highest scoring top-k items",
+      "expected_ids": [
+        "python-topk"
+      ]
+    },
+    {
+      "id": "q-strict-bash",
+      "query": "enable strict error handling in bash",
+      "expected_ids": [
+        "bash-strict-mode"
+      ]
+    },
+    {
+      "id": "q-checksum",
+      "query": "verify a SHA256SUMS manifest in shell",
+      "expected_ids": [
+        "bash-sha-check"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+name: Bug report / Báo lỗi
+description: Report a reproducible problem / Báo cáo vấn đề có thể tái lập
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a reproducible issue.
+        Cảm ơn bạn đã báo cáo một lỗi có thể tái lập.
+  - type: input
+    id: sha
+    attributes:
+      label: Git commit SHA
+      description: Exact revision used / Revision chính xác đã dùng
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment / Môi trường
+      description: Kaggle accelerator, Python, attached inputs
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps / Các bước tái lập
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Actual and expected result / Kết quả thực tế và mong đợi
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Safe logs / Log an toàn
+      description: Do not include tokens or credentials / Không gửi token hoặc credential

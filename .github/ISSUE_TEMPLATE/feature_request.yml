@@ -1,0 +1,22 @@
+name: Feature request / Đề xuất tính năng
+description: Suggest an improvement / Đề xuất cải tiến
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / Vấn đề
+      description: What user problem should this solve? / Tính năng cần giải quyết vấn đề gì?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal / Đề xuất
+    validations:
+      required: true
+  - type: textarea
+    id: qualification
+    attributes:
+      label: Runtime or qualification impact / Ảnh hưởng runtime hoặc qualification

@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security / Bảo mật
+    url: https://github.com/dangkhoa2016/Qwen3-Embedding-8B-On-T4x2-GPU/blob/main/.github/SECURITY.md
+    about: Private-report guidance for security-sensitive issues

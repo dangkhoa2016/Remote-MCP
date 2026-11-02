@@ -3,17 +3,35 @@ from __future__ import annotations
 
 import os
 import platform
+import re
 import shutil
 import stat
 import subprocess
 import sys
 from pathlib import Path
 from typing import Any
+from agent.git_readonly import GitReadOnly, GitReadOnlyError
 
 MAX_FILE_BYTES = 32_768
 MAX_DIRECTORY_ENTRIES = 150
 DENIED_NAMES = {".env", "id_rsa", "id_ed25519", "credentials", "credentials.json", "token", "token.txt"}
 DENIED_SUFFIXES = {".pem", ".key", ".p12", ".pfx"}
+# Reject names commonly used for secrets even when not dot-prefixed,
+# e.g. env.dev.txt, service-token.json, credentials.backup.
+# A filename denylist is defense in depth; secret files must be kept
+# outside the authorized workspace root regardless of their names.
+_SECRET_MARKER = re.compile(
+    r"(?:^|[._-])(?:env|secrets?|credentials?|tokens?|passwords?|passwd|"
+    r"api[_-]?key|private[_-]?key|apikey)(?:$|[._-])",
+    re.IGNORECASE,
+)
+
+
+def _denied_component(name: str) -> bool:
+    lowered = name.casefold()
+    return (lowered.startswith(".") or lowered in DENIED_NAMES
+            or Path(lowered).suffix in DENIED_SUFFIXES
+            or bool(_SECRET_MARKER.search(lowered)))
 
 
 class WorkspaceError(Exception):
@@ -34,8 +52,7 @@ class Worker:
         if Path(requested).is_absolute():
             raise WorkspaceError("Only relative paths are permitted")
         parts = Path(requested).parts
-        if any(part in ("..", "") or part.startswith(".") or part.lower() in DENIED_NAMES
-               or Path(part).suffix.lower() in DENIED_SUFFIXES for part in parts):
+        if any(part in ("..", "") or _denied_component(part) for part in parts):
             raise WorkspaceError("Path is restricted")
         # Reject every symlink in the requested path, including links pointing
         # back inside the workspace to hidden files. This check is also backed
@@ -51,8 +68,7 @@ class Worker:
         # A symlink race could change the resolved target. Never accept a
         # canonical path into a hidden or disallowed component either.
         canonical_parts = candidate.relative_to(self.root).parts
-        if any(p.startswith(".") or p.lower() in DENIED_NAMES
-               or Path(p).suffix.lower() in DENIED_SUFFIXES for p in canonical_parts):
+        if any(_denied_component(p) for p in canonical_parts):
             raise WorkspaceError("Path is restricted")
         return candidate
 
@@ -147,11 +163,41 @@ class Worker:
             data = os.read(fd, max_bytes + 1)
         finally:
             os.close(fd)
+        limited = data[:max_bytes]
         try:
-            text = data[:max_bytes].decode("utf-8")
+            text = limited.decode("utf-8")
         except UnicodeDecodeError as exc:
-            raise WorkspaceError("File is not UTF-8 text") from exc
-        return {"path": rel, "content": text, "truncated": len(data) > max_bytes, "bytes_read": len(data[:max_bytes])}
+            # Only tolerate a *valid* UTF-8 character cut off at the byte cap.
+            # Malformed UTF-8 or binary data must still fail closed.
+            if (len(data) <= max_bytes or exc.reason != "unexpected end of data"
+                    or exc.end != len(limited)):
+                raise WorkspaceError("File is not UTF-8 text") from exc
+            limited = limited[:exc.start]
+            try:
+                text = limited.decode("utf-8")
+            except UnicodeDecodeError as nested:
+                raise WorkspaceError("File is not UTF-8 text") from nested
+        return {"path": rel, "content": text, "truncated": len(data) > max_bytes,
+                "bytes_read": len(limited)}
+
+    def git_status(self, args: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return GitReadOnly(self.root, self.path).status()
+        except GitReadOnlyError as exc:
+            raise WorkspaceError(str(exc)) from exc
+
+    def git_diff(self, args: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return GitReadOnly(self.root, self.path).diff(
+                args.get("path", ""), args.get("staged", False))
+        except GitReadOnlyError as exc:
+            raise WorkspaceError(str(exc)) from exc
+
+    def git_log(self, args: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return GitReadOnly(self.root, self.path).log(args.get("count", 10))
+        except GitReadOnlyError as exc:
+            raise WorkspaceError(str(exc)) from exc
 
     def execute_command(self, args: dict[str, Any]) -> dict[str, Any]:
         if not self.commands_enabled:
@@ -177,7 +223,7 @@ class Worker:
 
     def dispatch(self, operation: str, args: dict[str, Any]) -> dict[str, Any]:
         operations = {"get_device_info": self.get_device_info, "list_directory": self.list_directory,
-                      "read_file": self.read_file, "execute_command": self.execute_command}
+                      "read_file": self.read_file, "git_status": self.git_status, "git_diff": self.git_diff, "git_log": self.git_log, "execute_command": self.execute_command}
         if operation not in operations:
             raise WorkspaceError("Unsupported operation")
         return operations[operation](args)

@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 
 LOG = logging.getLogger("krw.gateway")
 DEVICE_ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
-VALID_OPERATIONS = {"get_device_info", "list_directory", "read_file", "execute_command"}
+VALID_OPERATIONS = {"get_device_info", "list_directory", "read_file", "git_status", "git_diff", "git_log", "execute_command"}
 
 
 class Registration(BaseModel):
@@ -41,7 +41,7 @@ class Result(BaseModel):
 
 class Dispatch(BaseModel):
     device_id: str
-    operation: Literal["get_device_info", "list_directory", "read_file", "execute_command"]
+    operation: Literal["get_device_info", "list_directory", "read_file", "git_status", "git_diff", "git_log", "execute_command"]
     arguments: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -192,7 +192,7 @@ def create_app(state: State) -> FastAPI:
     async def capabilities(x_control_token: str | None = Header(default=None)):
         state.check_control(x_control_token)
         return {"mode": "device-relay", "device_agent_connected": any(state.online(d) for d in state.devices.values()),
-                "available_tools": ["health_check", "list_capabilities", "list_devices", "get_device_info", "list_directory", "read_file", "execute_command"],
+                "available_tools": ["health_check", "list_capabilities", "list_devices", "get_device_info", "list_directory", "read_file", "git_status", "git_diff", "git_log", "execute_command"],
                 "filesystem_access": True, "command_execution": state.commands_enabled}
 
     @app.get("/v1/control/devices")

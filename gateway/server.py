@@ -61,7 +61,7 @@ def dispatch(device_id: str, operation: str, args: dict) -> dict[str, Any]:
 @mcp.tool()
 def health_check() -> dict[str, str]:
     """Verify the MCP server is reachable after authenticating, without accessing devices."""
-    return {"service": "khoa-remote-workspace", "version": "0.3.1", "status": "ok",
+    return {"service": "khoa-remote-workspace", "version": "0.4.0", "status": "ok",
             "mode": "local-login-read" if MCP_TOOLS_ENABLED else "locked"}
 
 
@@ -98,6 +98,24 @@ def list_directory(device_id: str, path: str = ".") -> dict[str, Any]:
 def read_file(device_id: str, path: str, max_bytes: int = 8192) -> dict[str, Any]:
     """Read UTF-8 nonhidden files beneath an explicitly allowed workspace root."""
     return dispatch(device_id, "read_file", {"path": path, "max_bytes": max_bytes})
+
+
+@mcp.tool()
+def git_status(device_id: str) -> dict[str, Any]:
+    """Read a sanitized Git status summary from an authorized workspace."""
+    return dispatch(device_id, "git_status", {})
+
+
+@mcp.tool()
+def git_diff(device_id: str, path: str, staged: bool = False) -> dict[str, Any]:
+    """Read a bounded diff for one allowed source file; never invoke a shell."""
+    return dispatch(device_id, "git_diff", {"path": path, "staged": staged})
+
+
+@mcp.tool()
+def git_log(device_id: str, count: int = 10) -> dict[str, Any]:
+    """Read up to 20 Git commit metadata records (never checkout/reset)."""
+    return dispatch(device_id, "git_log", {"count": count})
 
 
 @mcp.tool()

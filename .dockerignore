@@ -1,0 +1,14 @@
+.git
+.env*
+.krw-local-state
+.venv
+**/__pycache__
+.pytest_cache
+**/*.sqlite
+**/*.sqlite-*
+**/*.db
+**/*.db-*
+**/*.patch
+**/*.zip
+**/*backup*
+*.log

@@ -1,0 +1,14 @@
+# Secrets, local state, virtual environments and artifacts
+.env*
+!.env.example
+.krw-local-state/
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
+.venv/
+__pycache__/
+.pytest_cache/
+*.zip
+*.patch
+*backup*

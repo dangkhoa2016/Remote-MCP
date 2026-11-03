@@ -35,7 +35,9 @@ def run() -> None:
     if not (url.startswith("https://") or url.startswith("http://127.0.0.1:") or url.startswith("http://localhost:")):
         raise SystemExit("Remote KRW_RELAY_URL requires HTTPS")
     worker = Worker(Path(root), commands_enabled=os.getenv("KRW_COMMANDS_ENABLED", "0") == "1",
-                    tests_enabled=os.getenv("KRW_ALLOW_TEST_COMMANDS", "0") == "1")
+                    tests_enabled=os.getenv("KRW_ALLOW_TEST_COMMANDS", "0") == "1",
+                    write_enabled=os.getenv("KRW_ALLOW_FILE_WRITES", "0") == "1",
+                    checks_enabled=os.getenv("KRW_ALLOW_STATIC_CHECKS", "0") == "1")
     headers = {"Authorization": f"Bearer {token}"}
     info = {"device_id": device_id, "hostname": platform.node()[:128] or "unknown",
             "platform": platform.system()[:128], "workspace": worker.root.name[:128]}

@@ -23,6 +23,7 @@ AGENT_FILES = (
     'agent/agent.py',
     'agent/worker.py',
     'agent/git_readonly.py',
+    'agent/workspace_edit.py',
     'gateway/agent-requirements.txt',
 )
 SCRIPT_MARKER_SHA = '__KRW_AGENT_BUNDLE_SHA256__'

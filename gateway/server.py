@@ -61,7 +61,7 @@ def dispatch(device_id: str, operation: str, args: dict) -> dict[str, Any]:
 @mcp.tool()
 def health_check() -> dict[str, str]:
     """Verify the MCP server is reachable after authenticating, without accessing devices."""
-    return {"service": "khoa-remote-workspace", "version": "0.4.0", "status": "ok",
+    return {"service": "khoa-remote-workspace", "version": "0.5.0", "status": "ok",
             "mode": "local-login-read" if MCP_TOOLS_ENABLED else "locked"}
 
 
@@ -116,6 +116,33 @@ def git_diff(device_id: str, path: str, staged: bool = False) -> dict[str, Any]:
 def git_log(device_id: str, count: int = 10) -> dict[str, Any]:
     """Read up to 20 Git commit metadata records (never checkout/reset)."""
     return dispatch(device_id, "git_log", {"count": count})
+
+
+@mcp.tool()
+def file_sha256(device_id: str, path: str) -> dict[str, Any]:
+    """Read SHA-256 of one allowed source file before an optimistic update."""
+    return dispatch(device_id, "file_sha256", {"path": path})
+
+
+@mcp.tool()
+def write_file(device_id: str, path: str, content: str, expected_sha256: str | None = None) -> dict[str, Any]:
+    """Create UTF-8 text (16 KiB max), update only when supplied SHA-256 matches.
+
+    Render must set KRW_WRITE_ENABLED=1 and Agent KRW_ALLOW_FILE_WRITES=1.
+    No file deletion, arbitrary shell, Git writes or bulk operations.
+    """
+    if os.getenv("KRW_WRITE_ENABLED", "0") != "1":
+        return {"error": "Workspace writes disabled on gateway"}
+    return dispatch(device_id, "write_file",
+                    {"path": path, "content": content, "expected_sha256": expected_sha256})
+
+
+@mcp.tool()
+def check_syntax(device_id: str, path: str) -> dict[str, Any]:
+    """Validate Python/JSON/TOML syntax without executing project code."""
+    if os.getenv("KRW_STATIC_CHECKS_ENABLED", "0") != "1":
+        return {"error": "Static checks disabled on gateway"}
+    return dispatch(device_id, "check_syntax", {"path": path})
 
 
 @mcp.tool()

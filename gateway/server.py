@@ -223,6 +223,20 @@ def delete_directory(device_id: str, path: str, recursive: bool = False,
 
 
 @mcp.tool()
+def git_branches(device_id: str, workspace_id: str = "default") -> dict[str, Any]:
+    """List local branches and identify the currently checked-out branch."""
+    return dispatch(device_id, "git_branches", {"workspace_id": workspace_id})
+
+
+@mcp.tool()
+def git_unstage(device_id: str, path: str, workspace_id: str = "default") -> dict[str, Any]:
+    """Remove one path from Git staging without discarding working tree changes."""
+    if os.getenv("KRW_GIT_WRITES_ENABLED", "0") != "1":
+        return {"error": "Git writes disabled on gateway"}
+    return dispatch(device_id, "git_unstage", {"workspace_id": workspace_id, "path": path})
+
+
+@mcp.tool()
 def git_stage(device_id: str, path: str, workspace_id: str = "default") -> dict[str, Any]:
     """Stage one authorized file path in a Git repository."""
     if os.getenv("KRW_GIT_WRITES_ENABLED", "0") != "1":

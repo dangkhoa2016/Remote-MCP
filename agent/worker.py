@@ -16,7 +16,7 @@ from agent.workspace_manage import WorkspaceManager
 
 MAX_FILE_BYTES = 262_144
 MAX_DIRECTORY_ENTRIES = 150
-DENIED_NAMES = {".env", "id_rsa", "id_ed25519", "credentials", "credentials.json", "token", "token.txt"}
+DENIED_NAMES = {".env", ".git", ".ssh", "id_rsa", "id_ed25519", "credentials", "credentials.json", "token", "token.txt"}
 DENIED_SUFFIXES = {".pem", ".key", ".p12", ".pfx"}
 # Reject names commonly used for secrets even when not dot-prefixed,
 # e.g. env.dev.txt, service-token.json, credentials.backup.
@@ -31,7 +31,7 @@ _SECRET_MARKER = re.compile(
 
 def _denied_component(name: str) -> bool:
     lowered = name.casefold()
-    return (lowered.startswith(".") or lowered in DENIED_NAMES
+    return (lowered in DENIED_NAMES
             or Path(lowered).suffix in DENIED_SUFFIXES
             or bool(_SECRET_MARKER.search(lowered)))
 

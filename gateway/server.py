@@ -125,8 +125,9 @@ def file_sha256(device_id: str, path: str) -> dict[str, Any]:
 
 
 @mcp.tool()
-def write_file(device_id: str, path: str, content: str, expected_sha256: str | None = None) -> dict[str, Any]:
-    """Create UTF-8 text (1 MiB max), update only when supplied SHA-256 matches.
+def write_file(device_id: str, path: str, content: str, expected_sha256: str | None = None,
+               overwrite: bool = False) -> dict[str, Any]:
+    """Create or overwrite UTF-8 text (1 MiB max). Updates require SHA-256 or overwrite=true.
 
     Render must set KRW_WRITE_ENABLED=1 and Agent KRW_ALLOW_FILE_WRITES=1.
     No file deletion, arbitrary shell, Git writes or bulk operations.
@@ -134,7 +135,8 @@ def write_file(device_id: str, path: str, content: str, expected_sha256: str | N
     if os.getenv("KRW_WRITE_ENABLED", "0") != "1":
         return {"error": "Workspace writes disabled on gateway"}
     return dispatch(device_id, "write_file",
-                    {"path": path, "content": content, "expected_sha256": expected_sha256})
+                    {"path": path, "content": content, "expected_sha256": expected_sha256,
+                     "overwrite": overwrite})
 
 
 @mcp.tool()

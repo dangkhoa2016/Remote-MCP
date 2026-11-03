@@ -78,6 +78,11 @@ class GitWrite(GitReadOnly):
         self._invoke(["add", "--", relative])
         return {"path": relative, "staged": True}
 
+    def unstage(self, path: str) -> dict:
+        relative = self._path(path)
+        self._invoke(["restore", "--staged", "--", relative])
+        return {"path": relative, "unstaged": True}
+
     def commit(self, message: str, author_name: str, author_email: str) -> dict:
         if (not isinstance(message, str) or not 1 <= len(message) <= 500 or
                 any(ord(c) < 32 and c != "\n" for c in message)):

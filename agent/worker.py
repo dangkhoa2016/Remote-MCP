@@ -12,10 +12,11 @@ from pathlib import Path
 from typing import Any
 from agent.git_readonly import GitReadOnly, GitReadOnlyError
 from agent.workspace_edit import WorkspaceEditor, WorkspaceEditError
+from agent.workspace_manage import WorkspaceManager
 
-MAX_FILE_BYTES = 32_768
+MAX_FILE_BYTES = 262_144
 MAX_DIRECTORY_ENTRIES = 150
-DENIED_NAMES = {".env", "id_rsa", "id_ed25519", "credentials", "credentials.json", "token", "token.txt"}
+DENIED_NAMES = {".env", ".git", ".ssh", "id_rsa", "id_ed25519", "credentials", "credentials.json", "token", "token.txt"}
 DENIED_SUFFIXES = {".pem", ".key", ".p12", ".pfx"}
 # Reject names commonly used for secrets even when not dot-prefixed,
 # e.g. env.dev.txt, service-token.json, credentials.backup.
@@ -30,7 +31,7 @@ _SECRET_MARKER = re.compile(
 
 def _denied_component(name: str) -> bool:
     lowered = name.casefold()
-    return (lowered.startswith(".") or lowered in DENIED_NAMES
+    return (lowered in DENIED_NAMES
             or Path(lowered).suffix in DENIED_SUFFIXES
             or bool(_SECRET_MARKER.search(lowered)))
 
@@ -216,7 +217,53 @@ class Worker:
             raise WorkspaceError("Workspace writes disabled on agent")
         try:
             return WorkspaceEditor(self.root, self.path).write_file(
-                args.get("path"), args.get("content"), args.get("expected_sha256"))
+                args.get("path"), args.get("content"), args.get("expected_sha256"),
+                args.get("overwrite", False))
+        except WorkspaceEditError as exc:
+            raise WorkspaceError(str(exc)) from exc
+
+    def edit_file(self, args: dict[str, Any]) -> dict[str, Any]:
+        if not self.write_enabled:
+            raise WorkspaceError("Workspace writes disabled on agent")
+        try:
+            return WorkspaceManager(self.root, self.path).edit_file(
+                args.get("path"), args.get("old_string"), args.get("new_string"),
+                args.get("expected_replacements", 1), args.get("expected_sha256"))
+        except WorkspaceEditError as exc:
+            raise WorkspaceError(str(exc)) from exc
+
+    def search_files(self, args: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return WorkspaceManager(self.root, self.path).search_files(
+                args.get("query"), args.get("path", "."), args.get("mode", "both"),
+                args.get("max_results", 50), args.get("case_sensitive", False))
+        except WorkspaceEditError as exc:
+            raise WorkspaceError(str(exc)) from exc
+
+    def create_directory(self, args: dict[str, Any]) -> dict[str, Any]:
+        if not self.write_enabled:
+            raise WorkspaceError("Workspace writes disabled on agent")
+        try:
+            return WorkspaceManager(self.root, self.path).create_directory(
+                args.get("path"), args.get("parents", True))
+        except WorkspaceEditError as exc:
+            raise WorkspaceError(str(exc)) from exc
+
+    def move_file(self, args: dict[str, Any]) -> dict[str, Any]:
+        if not self.write_enabled:
+            raise WorkspaceError("Workspace writes disabled on agent")
+        try:
+            return WorkspaceManager(self.root, self.path).move_file(
+                args.get("source"), args.get("destination"), args.get("expected_sha256"))
+        except WorkspaceEditError as exc:
+            raise WorkspaceError(str(exc)) from exc
+
+    def delete_file(self, args: dict[str, Any]) -> dict[str, Any]:
+        if not self.write_enabled:
+            raise WorkspaceError("Workspace writes disabled on agent")
+        try:
+            return WorkspaceManager(self.root, self.path).delete_file(
+                args.get("path"), args.get("expected_sha256"))
         except WorkspaceEditError as exc:
             raise WorkspaceError(str(exc)) from exc
 
@@ -254,6 +301,9 @@ class Worker:
         operations = {"get_device_info": self.get_device_info, "list_directory": self.list_directory,
                       "read_file": self.read_file, "git_status": self.git_status, "git_diff": self.git_diff, "git_log": self.git_log,
                       "file_sha256": self.file_sha256, "write_file": self.write_file,
+                      "edit_file": self.edit_file, "search_files": self.search_files,
+                      "create_directory": self.create_directory, "move_file": self.move_file,
+                      "delete_file": self.delete_file,
                       "check_syntax": self.check_syntax,
                       "execute_command": self.execute_command}
         if operation not in operations:

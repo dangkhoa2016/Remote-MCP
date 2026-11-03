@@ -2,7 +2,7 @@
 
 Dự án MCP Gateway bảo vệ bằng OAuth, triển khai trên Render và kết nối Agent qua HTTPS theo chiều đi ra. Gateway chỉ mở cổng HTTPS cho OAuth và MCP; MCP backend và Agent Relay chỉ nghe localhost trong container Render.
 
-**Source phát hành:** Phase 4-C (v0.5.0) bổ sung ghi file có giới hạn và kiểm tra cú pháp *không chạy mã dự án*. Toàn bộ quyền mới mặc định TẮT; Gateway v0.4.0 trước đó vẫn chỉ đọc cho tới khi Render triển khai bản mới. Xác minh phiên bản thực tế qua `health_check`.
+**Bản phát triển:** Phase 5 (v0.6.0) bổ sung tìm kiếm, sửa chính xác một đoạn văn bản và quản lý file với giới hạn đọc/ghi lớn hơn. Nhánh này chưa có hiệu lực trên Render cho đến khi cập nhật cả Gateway lẫn Agent. Kiểm tra phiên bản đang chạy bằng `health_check`.
 
 ## Kết nối Agent (Linux / Google Colab)
 
@@ -27,10 +27,11 @@ Cần cung cấp Device ID/token đã đăng ký và một thư mục workspace 
 
 - Xem thông tin thiết bị, liệt kê thư mục và đọc file UTF-8 trong workspace được cấp quyền.
 - Đọc Git status, diff từng file và lịch sử commit trong Git repository thật nằm bên trong workspace.
-- Phase 4-C có ba công cụ (phải bật quyền) `file_sha256`, `write_file`, `check_syntax` (Python, JSON, TOML) với giới hạn rõ ràng.
-- `execute_command` vẫn bị khóa; không cung cấp shell tùy ý, `pytest`, xóa file, Git write hoặc thực thi mã dự án.
+- Phase 4-C có `file_sha256`, `write_file` (tối đa 1 MiB) và `check_syntax` (Python, JSON, TOML) không thực thi mã dự án.
+- Phase 5 bổ sung `edit_file`, `search_files`, `create_directory`, `move_file`, `delete_file`; đọc tối đa 256 KiB mỗi lần, hỗ trợ dotfile thông thường và file nguồn UTF-8 không có phần mở rộng.
+- `execute_command` vẫn bị khóa. Git vẫn chỉ đọc; chưa hỗ trợ shell hoặc Git write.
 
-Muốn bật Phase 4-C phải cấu hình quyền **cả ở Render và Agent**. Đọc [thiết kế bảo mật Phase 4-C](docs/PHASE4C_VI.md) trước khi bật. Mặc định không cho phép ghi.
+Muốn ghi, di chuyển hoặc xóa file cần bật quyền **cả ở Render và Agent** (`KRW_WRITE_ENABLED=1` và `KRW_ALLOW_FILE_WRITES=1`). Tìm kiếm chỉ đọc. Xem [Phase 5](docs/PHASE5_VI.md) để biết chức năng mới và [Phase 4-C](docs/PHASE4C_VI.md) để tham khảo SHA-256.
 
 ## Triển khai và kiểm chứng
 
@@ -43,4 +44,4 @@ python3 -m compileall -q agent gateway
 bash -n gateway/setup.sh
 ```
 
-Tài liệu: [triển khai](DEPLOY_VI.md), [cài Agent](docs/AGENT_BOOTSTRAP_VI.md), [Phase 4-C](docs/PHASE4C_VI.md). Tài liệu Northflank cũ được giữ lại để tham khảo lịch sử; hiện tại hệ thống chạy trên Render.
+Tài liệu: [triển khai](DEPLOY_VI.md), [cài Agent](docs/AGENT_BOOTSTRAP_VI.md), [Phase 4-C](docs/PHASE4C_VI.md), [Phase 5](docs/PHASE5_VI.md). Tài liệu Northflank cũ được giữ lại để tham khảo lịch sử; hiện tại hệ thống chạy trên Render.

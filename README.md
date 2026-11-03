@@ -2,7 +2,7 @@
 
 A private OAuth-protected MCP Gateway hosted on Render, with outbound-only device Agents. The Gateway and OAuth frontend use public HTTPS; the MCP backend and Agent Relay remain bound to localhost inside the Render container.
 
-**Release source:** Phase 4-C (v0.5.0) adds opt-in text edits and *non-executing* syntax checks. All new permissions default to OFF; previously deployed Gateway v0.4.0 remains read-only until Render deploys this release. Verify the live version with `health_check`.
+**Development release:** Phase 5 (v0.6.0) adds workspace search, targeted edits and file management, with higher text read/write limits. This branch is not live until the Render Gateway and device Agent are updated. Verify the deployed version with `health_check`.
 
 ## Connect an Agent (Linux / Google Colab)
 
@@ -27,10 +27,11 @@ You must provide a registered device ID/token and an existing dedicated workspac
 
 - Read device information, list permitted workspace directories, and read UTF-8 source files.
 - Read-only Git status, per-file diff and commit log on a real in-workspace Git repository.
-- Phase 4-C (opt-in): bounded `file_sha256`, `write_file` and `check_syntax` for Python, JSON and TOML.
-- `execute_command` remains disabled; the gateway does **not** expose arbitrary shell, `pytest`, deletion, Git writes or execution of project code.
+- Phase 4-C: `file_sha256`, `write_file` (up to 1 MiB), and non-executing `check_syntax` for Python, JSON and TOML.
+- Phase 5: `edit_file`, `search_files`, `create_directory`, `move_file` and `delete_file`. Read up to 256 KiB per call; normal dotfiles and extensionless UTF-8 source files are supported.
+- `execute_command` stays disabled. Git is still read-only; shell execution and Git writes are outside this release.
 
-Phase 4-C requires *both* Render and Agent opt-in flags. See [Phase 4-C security details](docs/PHASE4C_EN.md) before enabling. Writes are off by default.
+Workspace writes require *both* Render and Agent opt-in flags (`KRW_WRITE_ENABLED=1` and `KRW_ALLOW_FILE_WRITES=1`). Search is read-only. See [Phase 5](docs/PHASE5_EN.md) for the new tools and [Phase 4-C](docs/PHASE4C_EN.md) for the existing SHA-256 mechanism.
 
 ## Deployment & verification
 
@@ -43,4 +44,4 @@ python3 -m compileall -q agent gateway
 bash -n gateway/setup.sh
 ```
 
-Further details: [Deployment guide](DEPLOY_EN.md), [Agent bootstrap](docs/AGENT_BOOTSTRAP_EN.md), [Phase 4-C](docs/PHASE4C_EN.md). The original Northflank deployment guide is kept for historical context; the current service runs on Render.
+Further details: [Deployment guide](DEPLOY_EN.md), [Agent bootstrap](docs/AGENT_BOOTSTRAP_EN.md), [Phase 4-C](docs/PHASE4C_EN.md), [Phase 5](docs/PHASE5_EN.md). The original Northflank deployment guide is kept for historical context; the current service runs on Render.

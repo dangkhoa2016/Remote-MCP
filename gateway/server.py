@@ -61,7 +61,7 @@ def dispatch(device_id: str, operation: str, args: dict) -> dict[str, Any]:
 @mcp.tool()
 def health_check() -> dict[str, str]:
     """Verify the MCP server is reachable after authenticating, without accessing devices."""
-    return {"service": "khoa-remote-workspace", "version": "0.5.0", "status": "ok",
+    return {"service": "khoa-remote-workspace", "version": "0.6.0", "status": "ok",
             "mode": "local-login-read" if MCP_TOOLS_ENABLED else "locked"}
 
 
@@ -96,7 +96,7 @@ def list_directory(device_id: str, path: str = ".") -> dict[str, Any]:
 
 @mcp.tool()
 def read_file(device_id: str, path: str, max_bytes: int = 8192) -> dict[str, Any]:
-    """Read UTF-8 nonhidden files beneath an explicitly allowed workspace root."""
+    """Read UTF-8 source files within the workspace (up to 256 KiB per request)."""
     return dispatch(device_id, "read_file", {"path": path, "max_bytes": max_bytes})
 
 
@@ -125,8 +125,9 @@ def file_sha256(device_id: str, path: str) -> dict[str, Any]:
 
 
 @mcp.tool()
-def write_file(device_id: str, path: str, content: str, expected_sha256: str | None = None) -> dict[str, Any]:
-    """Create UTF-8 text (16 KiB max), update only when supplied SHA-256 matches.
+def write_file(device_id: str, path: str, content: str, expected_sha256: str | None = None,
+               overwrite: bool = False) -> dict[str, Any]:
+    """Create or overwrite UTF-8 text (1 MiB max). Updates require SHA-256 or overwrite=true.
 
     Render must set KRW_WRITE_ENABLED=1 and Agent KRW_ALLOW_FILE_WRITES=1.
     No file deletion, arbitrary shell, Git writes or bulk operations.
@@ -134,7 +135,56 @@ def write_file(device_id: str, path: str, content: str, expected_sha256: str | N
     if os.getenv("KRW_WRITE_ENABLED", "0") != "1":
         return {"error": "Workspace writes disabled on gateway"}
     return dispatch(device_id, "write_file",
-                    {"path": path, "content": content, "expected_sha256": expected_sha256})
+                    {"path": path, "content": content, "expected_sha256": expected_sha256,
+                     "overwrite": overwrite})
+
+
+@mcp.tool()
+def edit_file(device_id: str, path: str, old_string: str, new_string: str,
+              expected_replacements: int = 1, expected_sha256: str | None = None) -> dict[str, Any]:
+    """Replace an exact text span inside a workspace file; SHA-256 is optional."""
+    if os.getenv("KRW_WRITE_ENABLED", "0") != "1":
+        return {"error": "Workspace writes disabled on gateway"}
+    return dispatch(device_id, "edit_file",
+                    {"path": path, "old_string": old_string, "new_string": new_string,
+                     "expected_replacements": expected_replacements, "expected_sha256": expected_sha256})
+
+
+@mcp.tool()
+def search_files(device_id: str, query: str, path: str = ".", mode: str = "both",
+                 max_results: int = 50, case_sensitive: bool = False) -> dict[str, Any]:
+    """Search workspace filenames and UTF-8 source content without running shell."""
+    return dispatch(device_id, "search_files",
+                    {"query": query, "path": path, "mode": mode,
+                     "max_results": max_results, "case_sensitive": case_sensitive})
+
+
+@mcp.tool()
+def create_directory(device_id: str, path: str, parents: bool = True) -> dict[str, Any]:
+    """Create one or more nested workspace directories."""
+    if os.getenv("KRW_WRITE_ENABLED", "0") != "1":
+        return {"error": "Workspace writes disabled on gateway"}
+    return dispatch(device_id, "create_directory", {"path": path, "parents": parents})
+
+
+@mcp.tool()
+def move_file(device_id: str, source: str, destination: str,
+              expected_sha256: str | None = None) -> dict[str, Any]:
+    """Move an editable text file to a new path without overwriting a destination."""
+    if os.getenv("KRW_WRITE_ENABLED", "0") != "1":
+        return {"error": "Workspace writes disabled on gateway"}
+    return dispatch(device_id, "move_file",
+                    {"source": source, "destination": destination,
+                     "expected_sha256": expected_sha256})
+
+
+@mcp.tool()
+def delete_file(device_id: str, path: str, expected_sha256: str | None = None) -> dict[str, Any]:
+    """Delete one workspace source file; optional SHA-256 guards against stale edits."""
+    if os.getenv("KRW_WRITE_ENABLED", "0") != "1":
+        return {"error": "Workspace writes disabled on gateway"}
+    return dispatch(device_id, "delete_file",
+                    {"path": path, "expected_sha256": expected_sha256})
 
 
 @mcp.tool()

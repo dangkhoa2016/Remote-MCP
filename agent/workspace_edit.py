@@ -20,9 +20,9 @@ except ModuleNotFoundError:  # Python 3.10 Agent
 from pathlib import Path
 from typing import Callable
 
-MAX_WRITE_BYTES = 16_384
-MAX_EXISTING_BYTES = 262_144
-MAX_CHECK_BYTES = 262_144
+MAX_WRITE_BYTES = 1_048_576
+MAX_EXISTING_BYTES = 2_097_152
+MAX_CHECK_BYTES = 1_048_576
 EDITABLE_SUFFIXES = frozenset({
     '.py', '.md', '.txt', '.json', '.toml', '.ini', '.yml', '.yaml',
     '.rb', '.erb', '.js', '.ts', '.css', '.html', '.sql',
@@ -49,7 +49,7 @@ class WorkspaceEditor:
             target = self.validate_path(path)
         except Exception as exc:
             raise WorkspaceEditError('Path restricted') from exc
-        if target.suffix.lower() not in suffixes:
+        if suffixes == CHECK_SUFFIXES and target.suffix.lower() not in suffixes:
             raise WorkspaceEditError('File extension not allowed')
         parts = target.relative_to(self.root).parts
         if not parts or parts[0] == '..':
@@ -110,7 +110,8 @@ class WorkspaceEditor:
         return {'path': path, 'sha256': hashlib.sha256(data).hexdigest(),
                 'bytes_read': len(data)}
 
-    def write_file(self, path: str, content: str, expected_sha256: str | None = None) -> dict:
+    def write_file(self, path: str, content: str, expected_sha256: str | None = None,
+                   overwrite: bool = False) -> dict:
         parts = self._validated(path, EDITABLE_SUFFIXES)
         if not isinstance(content, str) or '\x00' in content:
             raise WorkspaceEditError('Content must be UTF-8 text without NUL')
@@ -119,7 +120,9 @@ class WorkspaceEditor:
         except UnicodeEncodeError as exc:
             raise WorkspaceEditError('Invalid UTF-8 content') from exc
         if len(payload) > MAX_WRITE_BYTES:
-            raise WorkspaceEditError('Content exceeds 16 KiB limit')
+            raise WorkspaceEditError('Content exceeds 1 MiB limit')
+        if type(overwrite) is not bool:
+            raise WorkspaceEditError('overwrite must be boolean')
         if expected_sha256 is not None and (not isinstance(expected_sha256, str)
                                             or not _HASH.fullmatch(expected_sha256)):
             raise WorkspaceEditError('Invalid expected SHA-256')
@@ -141,9 +144,9 @@ class WorkspaceEditor:
                     current = hashlib.sha256(data).hexdigest()
                 finally:
                     os.close(existing)
-                if expected_sha256 is None:
-                    raise WorkspaceEditError('File exists: expected_sha256 required for update')
-                if current != expected_sha256:
+                if expected_sha256 is None and not overwrite:
+                    raise WorkspaceEditError('File exists: supply expected_sha256 or overwrite=true')
+                if expected_sha256 is not None and current != expected_sha256:
                     raise WorkspaceEditError('File changed: SHA-256 mismatch')
                 if not (existing_stat.st_mode & stat.S_IWUSR):
                     raise WorkspaceEditError('Target file is read-only')

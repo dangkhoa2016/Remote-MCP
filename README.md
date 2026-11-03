@@ -2,7 +2,7 @@
 
 A private OAuth-protected MCP Gateway hosted on Render, with outbound-only device Agents. The Gateway and OAuth frontend use public HTTPS; the MCP backend and Agent Relay remain bound to localhost inside the Render container.
 
-**Development release:** Phase 6 (v0.7.0) adds multiple named workspaces, directory move/delete and opt-in Git stage/unstage/commit/branch/push. The new features require a Gateway deployment and updated Agent. Verify the actual live version with `health_check`.
+**Development release:** Phase 6.1 (v0.7.1) improves safe Git branch switching with nonconflicting untracked files and enforces disjoint named workspace roots. A Gateway deploy and Agent update are required before these changes are live; verify with `health_check`.
 
 ## Connect an Agent (Linux / Google Colab)
 
@@ -30,6 +30,7 @@ You must provide a registered device ID/token and an existing dedicated workspac
 - Phase 4-C: `file_sha256`, `write_file` (up to 1 MiB), and non-executing `check_syntax` for Python, JSON and TOML.
 - Phase 5: `edit_file`, `search_files`, `create_directory`, `move_file` and `delete_file`. Read up to 256 KiB per call; normal dotfiles and extensionless UTF-8 source files are supported.
 - Phase 6: `list_workspaces` and optional `workspace_id` on existing file/Git actions, `move_directory`, `delete_directory`, `git_branches`, `git_stage`, `git_unstage`, `git_commit`, `git_branch_create`, `git_branch_switch`, and `git_push`.
+- Phase 6.1: `git_branch_switch` preserves safe untracked files but refuses tracked/staged changes and untracked collisions; named workspace roots must not overlap or alias each other.
 - `execute_command` stays disabled. Git write and Git push are separately opt-in, disabled by default; arbitrary shell and force push are not exposed.
 
 File and directory writes require *both* Render and Agent flags (`KRW_WRITE_ENABLED=1` and `KRW_ALLOW_FILE_WRITES=1`). Git writes have separate flags (`KRW_GIT_WRITES_ENABLED=1`, `KRW_ALLOW_GIT_WRITES=1`), while push requires additional opt-in and an Agent-side token. Read [Phase 6](docs/PHASE6_EN.md) for setup and permission details.

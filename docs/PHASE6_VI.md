@@ -33,3 +33,17 @@ Mặc định toàn bộ Git write đều TẮT. Repository phải có thư mụ
 ## Quy trình phát hành
 
 Yêu cầu regression PASS trên Python 3.10 và 3.13. Deploy Gateway, dừng rồi nâng cấp Agent bằng bộ cài đã xác minh. Refresh danh sách MCP tools trong ChatGPT. Chỉ chạy smoke test thư mục và Git trên dự án thử nghiệm; không thử push vào repository production.
+
+## Phase 6.1: chuyển nhánh an toàn và cô lập workspace
+
+`git_branch_switch` cho phép **file untracked không xung đột** tồn tại khi chuyển nhánh và giữ nguyên nội dung. Nếu có thay đổi ở file đã tracked, staged changes hoặc merge conflict thì vẫn từ chối. Git tự từ chối trường hợp file untracked bị nhánh đích ghi đè. Không dùng `--force`, `reset` hay `clean`.
+
+Các thư mục gốc workspace phải **riêng biệt, không lồng nhau hoặc trùng đường dẫn thực**, kể cả alias qua symlink. Muốn kiểm thử thực tế hai workspace, cần cấu hình hai thư mục khác nhau:
+
+```bash
+mkdir -p /content/krw-phase6-secondary
+export KRW_WORKSPACES_JSON='{"secondary":"/content/krw-phase6-secondary"}'
+# Dừng Agent cũ, sau đó cập nhật Agent bằng setup.sh chính thức.
+```
+
+Workspace hiện tại vẫn là `default`. Sau khi khởi động lại Agent, `list_workspaces` phải trả về cả hai workspace. Việc đọc, ghi, tìm và xóa file thử nghiệm trên `secondary` không được ảnh hưởng `default`. Test đơn vị PASS chưa đủ để khẳng định nghiệm thu end-to-end hai workspace nếu Agent mới khai báo một workspace.

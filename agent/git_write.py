@@ -116,8 +116,19 @@ class GitWrite(GitReadOnly):
 
     def branch_switch(self, branch: str) -> dict:
         branch = self._branch(branch)
-        if self._invoke(["status", "--porcelain", "--untracked-files=normal"]):
-            raise GitReadOnlyError("Working tree must be clean before switching branches")
+        # Untracked files do not automatically make a branch switch unsafe.
+        # Reject all tracked modifications, staged changes and merge conflicts.
+        # Git's regular non-force switch refuses any untracked-file collision
+        # with a file that the target branch would check out.
+        status = self._invoke([
+            "status", "--porcelain=v1", "-z", "--no-renames",
+            "--untracked-files=all",
+        ])
+        for item in status.split(b"\0"):
+            if item and not item.startswith(b"?? "):
+                raise GitReadOnlyError(
+                    "Tracked or staged changes must be resolved before switching branches"
+                )
         self._invoke(["switch", "--", branch])
         return {"branch": branch, "switched": True}
 

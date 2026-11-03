@@ -124,3 +124,16 @@ async def test_relay_gates_new_write_operations():
         with pytest.raises(HTTPException) as exc:
             await state.submit(Dispatch(device_id="local-dev", operation=operation, arguments={}))
         assert exc.value.status_code == 403
+
+
+def test_regular_dotfiles_extensionless_files_and_scripts(tmp_path: Path):
+    worker = Worker(tmp_path, write_enabled=True)
+    for name in (".gitignore", "Gemfile", "script.sh"):
+        worker.write_file({"path": name, "content": "hello Khoa\n"})
+        assert worker.read_file({"path": name})["content"] == "hello Khoa\n"
+        result = worker.search_files({"query": "Khoa", "mode": "content"})
+        assert any(match["path"] == name for match in result["matches"])
+    with pytest.raises(WorkspaceError):
+        worker.write_file({"path": ".env", "content": "TOP_SECRET=x"})
+    with pytest.raises(WorkspaceError):
+        worker.read_file({"path": ".git/config"})

@@ -223,7 +223,7 @@ class WorkspaceManager(WorkspaceEditor):
                     if len(results) >= max_results:
                         truncated = True
                         break
-                if mode not in ("content", "both") or Path(entry.name).suffix.lower() not in EDITABLE_SUFFIXES:
+                if mode not in ("content", "both"):
                     continue
                 try:
                     f = os.open(entry.name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=directory_fd)

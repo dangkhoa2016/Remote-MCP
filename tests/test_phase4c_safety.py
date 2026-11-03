@@ -121,3 +121,8 @@ def test_write_opt_in_does_not_enable_shell(tmp_path):
         w.execute_command({'command_id':'python_version'})
     relay=State({'local-dev':'a'*48}, 'b'*48, writes_enabled=True, checks_enabled=True)
     assert relay.commands_enabled is False
+
+
+def test_broad_workspace_not_write_enabled():
+    with pytest.raises(ValueError, match='too broad'):
+        Worker(Path('/'), write_enabled=True)

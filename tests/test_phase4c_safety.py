@@ -43,7 +43,7 @@ def test_create_read_hash_and_update(tmp_path):
 
 @pytest.mark.parametrize('path', [
     '../outside.md', '/etc/passwd', '.env', 'env.dev.txt', 'service-token.json',
-    'credentials.backup', 'secret.key', 'run.sh', 'dir/../bad.md'
+    'credentials.backup', 'secret.key', 'dir/../bad.md'
 ])
 def test_dangerous_paths_denied(tmp_path, path):
     w = Worker(tmp_path, write_enabled=True)

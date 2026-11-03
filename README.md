@@ -2,7 +2,7 @@
 
 A private OAuth-protected MCP Gateway hosted on Render, with outbound-only device Agents. The Gateway and OAuth frontend use public HTTPS; the MCP backend and Agent Relay remain bound to localhost inside the Render container.
 
-**Development release:** Phase 5 (v0.6.0) adds workspace search, targeted edits and file management, with higher text read/write limits. This branch is not live until the Render Gateway and device Agent are updated. Verify the deployed version with `health_check`.
+**Development release:** Phase 6 (v0.7.0) adds multiple named workspaces, directory move/delete and opt-in Git stage/unstage/commit/branch/push. The new features require a Gateway deployment and updated Agent. Verify the actual live version with `health_check`.
 
 ## Connect an Agent (Linux / Google Colab)
 
@@ -29,9 +29,10 @@ You must provide a registered device ID/token and an existing dedicated workspac
 - Read-only Git status, per-file diff and commit log on a real in-workspace Git repository.
 - Phase 4-C: `file_sha256`, `write_file` (up to 1 MiB), and non-executing `check_syntax` for Python, JSON and TOML.
 - Phase 5: `edit_file`, `search_files`, `create_directory`, `move_file` and `delete_file`. Read up to 256 KiB per call; normal dotfiles and extensionless UTF-8 source files are supported.
-- `execute_command` stays disabled. Git is still read-only; shell execution and Git writes are outside this release.
+- Phase 6: `list_workspaces` and optional `workspace_id` on existing file/Git actions, `move_directory`, `delete_directory`, `git_branches`, `git_stage`, `git_unstage`, `git_commit`, `git_branch_create`, `git_branch_switch`, and `git_push`.
+- `execute_command` stays disabled. Git write and Git push are separately opt-in, disabled by default; arbitrary shell and force push are not exposed.
 
-Workspace writes require *both* Render and Agent opt-in flags (`KRW_WRITE_ENABLED=1` and `KRW_ALLOW_FILE_WRITES=1`). Search is read-only. See [Phase 5](docs/PHASE5_EN.md) for the new tools and [Phase 4-C](docs/PHASE4C_EN.md) for the existing SHA-256 mechanism.
+File and directory writes require *both* Render and Agent flags (`KRW_WRITE_ENABLED=1` and `KRW_ALLOW_FILE_WRITES=1`). Git writes have separate flags (`KRW_GIT_WRITES_ENABLED=1`, `KRW_ALLOW_GIT_WRITES=1`), while push requires additional opt-in and an Agent-side token. Read [Phase 6](docs/PHASE6_EN.md) for setup and permission details.
 
 ## Deployment & verification
 
@@ -44,4 +45,4 @@ python3 -m compileall -q agent gateway
 bash -n gateway/setup.sh
 ```
 
-Further details: [Deployment guide](DEPLOY_EN.md), [Agent bootstrap](docs/AGENT_BOOTSTRAP_EN.md), [Phase 4-C](docs/PHASE4C_EN.md), [Phase 5](docs/PHASE5_EN.md). The original Northflank deployment guide is kept for historical context; the current service runs on Render.
+Further details: [Deployment guide](DEPLOY_EN.md), [Agent bootstrap](docs/AGENT_BOOTSTRAP_EN.md), [Phase 4-C](docs/PHASE4C_EN.md), [Phase 5](docs/PHASE5_EN.md), [Phase 6](docs/PHASE6_EN.md). The original Northflank deployment guide is kept for historical context; the current service runs on Render.

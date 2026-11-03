@@ -75,8 +75,8 @@ class GitReadOnly:
         relative = target.relative_to(self.root).as_posix()
         if any(ord(c) < 32 or ord(c) == 127 for c in relative):
             raise GitReadOnlyError('Control characters are prohibited in Git paths')
-        if target.suffix.lower() not in ALLOWED_SUFFIXES:
-            raise GitReadOnlyError('File extension not approved for Git diff')
+        # Accept ordinary extensionless files and source formats; workspace path
+        # validation already rejects secret-like names and Git metadata.
         return relative
 
     def status(self) -> dict:
@@ -116,6 +116,15 @@ class GitReadOnly:
             raise GitReadOnlyError('Binary diff rejected')
         return {'path': safe_path, 'staged': staged, 'diff': text[:MAX_DIFF_CHARS],
                 'truncated': len(text) > MAX_DIFF_CHARS, 'read_only': True}
+
+    def branches(self) -> dict:
+        raw = self._run(["branch", "--format=%(refname:short)"], max_output=16384)
+        names = []
+        for name in raw.decode("utf-8", "replace").splitlines():
+            if name and len(name) <= 128:
+                names.append(name)
+        current = self._run(["branch", "--show-current"]).decode("utf-8", "replace").strip()
+        return {"branches": names[:100], "current": current, "read_only": True}
 
     def log(self, count: int = 10) -> dict:
         if type(count) is not int or not 1 <= count <= 20:

@@ -12,7 +12,8 @@ from pathlib import Path
 
 import httpx
 
-from agent.worker import Worker, WorkspaceError
+from agent.worker import WorkspaceError
+from agent.workspace_routes import WorkspaceRouter
 
 LOG = logging.getLogger("krw.agent")
 STOP = False
@@ -34,13 +35,10 @@ def run() -> None:
         raise SystemExit("Set KRW_AGENT_TOKEN (>=32 chars) and KRW_WORKSPACE_ROOT")
     if not (url.startswith("https://") or url.startswith("http://127.0.0.1:") or url.startswith("http://localhost:")):
         raise SystemExit("Remote KRW_RELAY_URL requires HTTPS")
-    worker = Worker(Path(root), commands_enabled=os.getenv("KRW_COMMANDS_ENABLED", "0") == "1",
-                    tests_enabled=os.getenv("KRW_ALLOW_TEST_COMMANDS", "0") == "1",
-                    write_enabled=os.getenv("KRW_ALLOW_FILE_WRITES", "0") == "1",
-                    checks_enabled=os.getenv("KRW_ALLOW_STATIC_CHECKS", "0") == "1")
+    worker = WorkspaceRouter.from_env(Path(root))
     headers = {"Authorization": f"Bearer {token}"}
     info = {"device_id": device_id, "hostname": platform.node()[:128] or "unknown",
-            "platform": platform.system()[:128], "workspace": worker.root.name[:128]}
+            "platform": platform.system()[:128], "workspace": worker.workers["default"].root.name[:128]}
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)

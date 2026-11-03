@@ -32,11 +32,21 @@ class WorkspaceRouter:
             roots[workspace_id] = Path(raw_path)
         self.workers: dict[str, Worker] = {}
         for workspace_id, path in roots.items():
-            self.workers[workspace_id] = Worker(
+            worker = Worker(
                 path, commands_enabled=commands_enabled, tests_enabled=tests_enabled,
                 write_enabled=write_enabled, checks_enabled=checks_enabled,
                 git_write_enabled=git_write_enabled, git_push_enabled=git_push_enabled,
             )
+            # Prevent aliases and nested roots from creating an implicit path
+            # between two otherwise independently authorized workspaces.
+            if any(
+                worker.root == existing.root
+                or worker.root.is_relative_to(existing.root)
+                or existing.root.is_relative_to(worker.root)
+                for existing in self.workers.values()
+            ):
+                raise ValueError("Workspace roots must be disjoint")
+            self.workers[workspace_id] = worker
 
     @classmethod
     def from_env(cls, root: Path) -> "WorkspaceRouter":

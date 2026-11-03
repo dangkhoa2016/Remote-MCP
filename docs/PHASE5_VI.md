@@ -29,7 +29,7 @@ Các công cụ hiện có `write_file`, `read_file`, `file_sha256` và `check_s
 Trên Render, bật `KRW_WRITE_ENABLED=1` cho các thao tác ghi/di chuyển/xóa.
 Trên Agent, bật `KRW_ALLOW_FILE_WRITES=1`. Có thể giữ cấu hình đã bật từ Phase 4-C.
 `search_files` chỉ đọc nên không cần bật quyền ghi.
-Sau khi deploy Gateway, cập nhật và khởi động lại Agent bằng bộ cài đã được kiểm chứng để nhận module Worker mới. Tiếp đó refresh tool discovery trong ChatGPT.
+Sau khi deploy Gateway, dừng Agent cũ rồi chạy lại bộ cài đã được kiểm chứng để nhận module Worker mới. Bộ cài dùng lại cấu hình Agent cục bộ đã có (device ID, token, workspace, quyền ghi và kiểm tra cú pháp), không cần nhập lại. Tiếp đó refresh tool discovery trong ChatGPT.
 
 ## Điều kiện phát hành
 

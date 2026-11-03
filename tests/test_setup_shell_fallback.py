@@ -19,7 +19,8 @@ def _bundle(tmp_path: Path) -> Path:
     bundle = tmp_path / 'bundle.tar.gz'
     with tarfile.open(bundle, 'w:gz') as tar:
         for name in ('agent/__init__.py', 'agent/agent.py', 'agent/worker.py',
-                     'agent/git_readonly.py', 'agent/workspace_edit.py', 'agent-requirements.txt'):
+                     'agent/git_readonly.py', 'agent/workspace_edit.py',
+                     'agent/workspace_manage.py', 'agent-requirements.txt'):
             raw = b'httpx>=0.27,<1\n' if name.endswith('requirements.txt') else b'# test\n'
             meta = tarfile.TarInfo(name)
             meta.size = len(raw)
@@ -94,6 +95,26 @@ exit 11
     assert 'AGENT_STARTED device=colab-test commands=0' in log.read_text()
     assert (config / 'agent.env').stat().st_mode & 0o077 == 0
     assert (install / 'start.sh').exists()
+    # Upgrade without passing the token/device again, retaining opt-in flags.
+    config_file = config / 'agent.env'
+    existing = config_file.read_text(encoding='utf-8')
+    config_file.write_text(existing.replace('KRW_ALLOW_FILE_WRITES=0',
+                                            'KRW_ALLOW_FILE_WRITES=1').replace(
+        'KRW_ALLOW_STATIC_CHECKS=0', 'KRW_ALLOW_STATIC_CHECKS=1'), encoding='utf-8')
+    upgrade_env = dict(env)
+    for key in ('KRW_DEVICE_ID', 'KRW_WORKSPACE_ROOT', 'KRW_AGENT_TOKEN',
+                'KRW_ALLOW_FILE_WRITES', 'KRW_ALLOW_STATIC_CHECKS'):
+        upgrade_env.pop(key, None)
+    upgraded = subprocess.run(['bash', str(installer)], env=upgrade_env,
+                              capture_output=True, text=True, timeout=12)
+    assert upgraded.returncode == 0, upgraded.stderr
+    assert 'Reusing existing Agent configuration' in upgraded.stderr
+    upgraded_config = config_file.read_text(encoding='utf-8')
+    assert 'KRW_DEVICE_ID=colab-test' in upgraded_config
+    assert 'KRW_ALLOW_FILE_WRITES=1' in upgraded_config
+    assert 'KRW_ALLOW_STATIC_CHECKS=1' in upgraded_config
+    assert 'AGENT_STARTED device=colab-test commands=0' in log.read_text()
+
     if venv_mode == 'broken':
         assert 'using isolated --target dependencies' in result.stderr
         assert '--target' in log.read_text()

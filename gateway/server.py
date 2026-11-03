@@ -61,7 +61,7 @@ def dispatch(device_id: str, operation: str, args: dict) -> dict[str, Any]:
 @mcp.tool()
 def health_check() -> dict[str, str]:
     """Verify the MCP server is reachable after authenticating, without accessing devices."""
-    return {"service": "khoa-remote-workspace", "version": "0.6.0", "status": "ok",
+    return {"service": "khoa-remote-workspace", "version": "0.7.0", "status": "ok",
             "mode": "local-login-read" if MCP_TOOLS_ENABLED else "locked"}
 
 
@@ -89,44 +89,44 @@ def get_device_info(device_id: str) -> dict[str, Any]:
 
 
 @mcp.tool()
-def list_directory(device_id: str, path: str = ".") -> dict[str, Any]:
+def list_directory(device_id: str, path: str = ".", workspace_id: str = "default") -> dict[str, Any]:
     """List files strictly beneath an authorized device workspace root."""
-    return dispatch(device_id, "list_directory", {"path": path})
+    return dispatch(device_id, "list_directory", {"workspace_id": workspace_id, "path": path})
 
 
 @mcp.tool()
-def read_file(device_id: str, path: str, max_bytes: int = 8192) -> dict[str, Any]:
+def read_file(device_id: str, path: str, max_bytes: int = 8192, workspace_id: str = "default") -> dict[str, Any]:
     """Read UTF-8 source files within the workspace (up to 256 KiB per request)."""
-    return dispatch(device_id, "read_file", {"path": path, "max_bytes": max_bytes})
+    return dispatch(device_id, "read_file", {"workspace_id": workspace_id, "path": path, "max_bytes": max_bytes})
 
 
 @mcp.tool()
-def git_status(device_id: str) -> dict[str, Any]:
+def git_status(device_id: str, workspace_id: str = "default") -> dict[str, Any]:
     """Read a sanitized Git status summary from an authorized workspace."""
-    return dispatch(device_id, "git_status", {})
+    return dispatch(device_id, "git_status", {"workspace_id": workspace_id, })
 
 
 @mcp.tool()
-def git_diff(device_id: str, path: str, staged: bool = False) -> dict[str, Any]:
+def git_diff(device_id: str, path: str, staged: bool = False, workspace_id: str = "default") -> dict[str, Any]:
     """Read a bounded diff for one allowed source file; never invoke a shell."""
-    return dispatch(device_id, "git_diff", {"path": path, "staged": staged})
+    return dispatch(device_id, "git_diff", {"workspace_id": workspace_id, "path": path, "staged": staged})
 
 
 @mcp.tool()
-def git_log(device_id: str, count: int = 10) -> dict[str, Any]:
+def git_log(device_id: str, count: int = 10, workspace_id: str = "default") -> dict[str, Any]:
     """Read up to 20 Git commit metadata records (never checkout/reset)."""
-    return dispatch(device_id, "git_log", {"count": count})
+    return dispatch(device_id, "git_log", {"workspace_id": workspace_id, "count": count})
 
 
 @mcp.tool()
-def file_sha256(device_id: str, path: str) -> dict[str, Any]:
+def file_sha256(device_id: str, path: str, workspace_id: str = "default") -> dict[str, Any]:
     """Read SHA-256 of one allowed source file before an optimistic update."""
-    return dispatch(device_id, "file_sha256", {"path": path})
+    return dispatch(device_id, "file_sha256", {"workspace_id": workspace_id, "path": path})
 
 
 @mcp.tool()
 def write_file(device_id: str, path: str, content: str, expected_sha256: str | None = None,
-               overwrite: bool = False) -> dict[str, Any]:
+               overwrite: bool = False, workspace_id: str = "default") -> dict[str, Any]:
     """Create or overwrite UTF-8 text (1 MiB max). Updates require SHA-256 or overwrite=true.
 
     Render must set KRW_WRITE_ENABLED=1 and Agent KRW_ALLOW_FILE_WRITES=1.
@@ -135,64 +135,141 @@ def write_file(device_id: str, path: str, content: str, expected_sha256: str | N
     if os.getenv("KRW_WRITE_ENABLED", "0") != "1":
         return {"error": "Workspace writes disabled on gateway"}
     return dispatch(device_id, "write_file",
-                    {"path": path, "content": content, "expected_sha256": expected_sha256,
+                    {"workspace_id": workspace_id, "path": path, "content": content, "expected_sha256": expected_sha256,
                      "overwrite": overwrite})
 
 
 @mcp.tool()
 def edit_file(device_id: str, path: str, old_string: str, new_string: str,
-              expected_replacements: int = 1, expected_sha256: str | None = None) -> dict[str, Any]:
+              expected_replacements: int = 1, expected_sha256: str | None = None, workspace_id: str = "default") -> dict[str, Any]:
     """Replace an exact text span inside a workspace file; SHA-256 is optional."""
     if os.getenv("KRW_WRITE_ENABLED", "0") != "1":
         return {"error": "Workspace writes disabled on gateway"}
     return dispatch(device_id, "edit_file",
-                    {"path": path, "old_string": old_string, "new_string": new_string,
+                    {"workspace_id": workspace_id, "path": path, "old_string": old_string, "new_string": new_string,
                      "expected_replacements": expected_replacements, "expected_sha256": expected_sha256})
 
 
 @mcp.tool()
 def search_files(device_id: str, query: str, path: str = ".", mode: str = "both",
-                 max_results: int = 50, case_sensitive: bool = False) -> dict[str, Any]:
+                 max_results: int = 50, case_sensitive: bool = False, workspace_id: str = "default") -> dict[str, Any]:
     """Search workspace filenames and UTF-8 source content without running shell."""
     return dispatch(device_id, "search_files",
-                    {"query": query, "path": path, "mode": mode,
+                    {"workspace_id": workspace_id, "query": query, "path": path, "mode": mode,
                      "max_results": max_results, "case_sensitive": case_sensitive})
 
 
 @mcp.tool()
-def create_directory(device_id: str, path: str, parents: bool = True) -> dict[str, Any]:
+def create_directory(device_id: str, path: str, parents: bool = True, workspace_id: str = "default") -> dict[str, Any]:
     """Create one or more nested workspace directories."""
     if os.getenv("KRW_WRITE_ENABLED", "0") != "1":
         return {"error": "Workspace writes disabled on gateway"}
-    return dispatch(device_id, "create_directory", {"path": path, "parents": parents})
+    return dispatch(device_id, "create_directory", {"workspace_id": workspace_id, "path": path, "parents": parents})
 
 
 @mcp.tool()
 def move_file(device_id: str, source: str, destination: str,
-              expected_sha256: str | None = None) -> dict[str, Any]:
+              expected_sha256: str | None = None, workspace_id: str = "default") -> dict[str, Any]:
     """Move an editable text file to a new path without overwriting a destination."""
     if os.getenv("KRW_WRITE_ENABLED", "0") != "1":
         return {"error": "Workspace writes disabled on gateway"}
     return dispatch(device_id, "move_file",
-                    {"source": source, "destination": destination,
+                    {"workspace_id": workspace_id, "source": source, "destination": destination,
                      "expected_sha256": expected_sha256})
 
 
 @mcp.tool()
-def delete_file(device_id: str, path: str, expected_sha256: str | None = None) -> dict[str, Any]:
+def delete_file(device_id: str, path: str, expected_sha256: str | None = None, workspace_id: str = "default") -> dict[str, Any]:
     """Delete one workspace source file; optional SHA-256 guards against stale edits."""
     if os.getenv("KRW_WRITE_ENABLED", "0") != "1":
         return {"error": "Workspace writes disabled on gateway"}
     return dispatch(device_id, "delete_file",
-                    {"path": path, "expected_sha256": expected_sha256})
+                    {"workspace_id": workspace_id, "path": path, "expected_sha256": expected_sha256})
 
 
 @mcp.tool()
-def check_syntax(device_id: str, path: str) -> dict[str, Any]:
+def check_syntax(device_id: str, path: str, workspace_id: str = "default") -> dict[str, Any]:
     """Validate Python/JSON/TOML syntax without executing project code."""
     if os.getenv("KRW_STATIC_CHECKS_ENABLED", "0") != "1":
         return {"error": "Static checks disabled on gateway"}
-    return dispatch(device_id, "check_syntax", {"path": path})
+    return dispatch(device_id, "check_syntax", {"workspace_id": workspace_id, "path": path})
+
+
+@mcp.tool()
+def list_workspaces(device_id: str) -> dict[str, Any]:
+    """List the named workspace roots explicitly allowed on this device."""
+    return dispatch(device_id, "list_workspaces", {})
+
+
+@mcp.tool()
+def move_directory(device_id: str, source: str, destination: str,
+                   workspace_id: str = "default") -> dict[str, Any]:
+    """Move a directory within one authorized workspace, without overwriting."""
+    if os.getenv("KRW_WRITE_ENABLED", "0") != "1":
+        return {"error": "Workspace writes disabled on gateway"}
+    return dispatch(device_id, "move_directory",
+                    {"workspace_id": workspace_id, "source": source, "destination": destination})
+
+
+@mcp.tool()
+def delete_directory(device_id: str, path: str, recursive: bool = False,
+                     max_entries: int = 1000, workspace_id: str = "default") -> dict[str, Any]:
+    """Remove an empty directory; recursive=true removes up to max_entries after preflight."""
+    if os.getenv("KRW_WRITE_ENABLED", "0") != "1":
+        return {"error": "Workspace writes disabled on gateway"}
+    return dispatch(device_id, "delete_directory",
+                    {"workspace_id": workspace_id, "path": path, "recursive": recursive,
+                     "max_entries": max_entries})
+
+
+@mcp.tool()
+def git_stage(device_id: str, path: str, workspace_id: str = "default") -> dict[str, Any]:
+    """Stage one authorized file path in a Git repository."""
+    if os.getenv("KRW_GIT_WRITES_ENABLED", "0") != "1":
+        return {"error": "Git writes disabled on gateway"}
+    return dispatch(device_id, "git_stage", {"workspace_id": workspace_id, "path": path})
+
+
+@mcp.tool()
+def git_commit(device_id: str, message: str, author_name: str, author_email: str,
+               workspace_id: str = "default") -> dict[str, Any]:
+    """Commit staged authorized files with explicit author identity; hooks disabled."""
+    if os.getenv("KRW_GIT_WRITES_ENABLED", "0") != "1":
+        return {"error": "Git writes disabled on gateway"}
+    return dispatch(device_id, "git_commit",
+                    {"workspace_id": workspace_id, "message": message,
+                     "author_name": author_name, "author_email": author_email})
+
+
+@mcp.tool()
+def git_branch_create(device_id: str, branch: str,
+                      workspace_id: str = "default") -> dict[str, Any]:
+    """Create a local branch from HEAD without switching workspaces."""
+    if os.getenv("KRW_GIT_WRITES_ENABLED", "0") != "1":
+        return {"error": "Git writes disabled on gateway"}
+    return dispatch(device_id, "git_branch_create",
+                    {"workspace_id": workspace_id, "branch": branch})
+
+
+@mcp.tool()
+def git_branch_switch(device_id: str, branch: str,
+                      workspace_id: str = "default") -> dict[str, Any]:
+    """Switch a clean local repository to an existing branch."""
+    if os.getenv("KRW_GIT_WRITES_ENABLED", "0") != "1":
+        return {"error": "Git writes disabled on gateway"}
+    return dispatch(device_id, "git_branch_switch",
+                    {"workspace_id": workspace_id, "branch": branch})
+
+
+@mcp.tool()
+def git_push(device_id: str, branch: str, workspace_id: str = "default") -> dict[str, Any]:
+    """Push current branch to HTTPS GitHub origin, when separately enabled and authenticated."""
+    if os.getenv("KRW_GIT_WRITES_ENABLED", "0") != "1":
+        return {"error": "Git writes disabled on gateway"}
+    if os.getenv("KRW_GIT_PUSH_ENABLED", "0") != "1":
+        return {"error": "Git push disabled on gateway"}
+    return dispatch(device_id, "git_push",
+                    {"workspace_id": workspace_id, "branch": branch})
 
 
 @mcp.tool()

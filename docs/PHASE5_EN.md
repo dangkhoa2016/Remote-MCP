@@ -14,7 +14,7 @@ The previous `write_file`, `read_file`, `file_sha256` and `check_syntax` remain 
 
 ## Limits and behavior
 
-- `write_file`: up to 1 MiB of UTF-8 text per call (previously 16 KiB).
+- `write_file`: up to 1 MiB of UTF-8 text per call (previously 16 KiB). For an existing file, supply `overwrite=true` to update without manually obtaining a hash, or provide `expected_sha256` for conflict detection.
 - `read_file`: up to 256 KiB returned per call (default still 8 KiB).
 - Existing-file hash: up to 2 MiB. Syntax checking: up to 1 MiB.
 - `search_files`: at most 100 results, 2,000 scanned files and 8 directory levels per call.

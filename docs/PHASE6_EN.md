@@ -33,3 +33,17 @@ All Git writes are OFF by default. Git repositories must have an actual in-works
 ## Release procedure
 
 Require regression PASS on Python 3.10 and 3.13. Deploy the Gateway, then stop and update the Agent with the verified installer. Refresh the MCP tools in ChatGPT. Run the directory and Git smoke tests only on a disposable project. Never test Git push against a production repository.
+
+## Phase 6.1: safer branch switching and workspace isolation
+
+A normal `git_branch_switch` now permits **nonconflicting untracked files**, preserving their content. Staged changes, modified tracked files, and unresolved conflicts still block switching. Git itself refuses an untracked-file collision with the destination branch, and no `--force`, `reset`, or `clean` command is used.
+
+Workspace roots must be **distinct and non-overlapping**, including their canonical paths after resolving symbolic links. Configure two different directories before claiming live multi-workspace verification:
+
+```bash
+mkdir -p /content/krw-phase6-secondary
+export KRW_WORKSPACES_JSON='{"secondary":"/content/krw-phase6-secondary"}'
+# Stop the existing Agent, then update it with the official setup.sh.
+```
+
+The main workspace remains `default`. After restarting the Agent, `list_workspaces` should report both names. Verify that reading, writing, searching and deleting a test file in `secondary` leaves `default` unchanged. A unit-test pass alone does not establish a live two-root test on an Agent still configured with one workspace.

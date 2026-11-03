@@ -119,6 +119,12 @@ def git_log(device_id: str, count: int = 10) -> dict[str, Any]:
 
 
 @mcp.tool()
+def file_sha256(device_id: str, path: str) -> dict[str, Any]:
+    """Read SHA-256 of one allowed source file before an optimistic update."""
+    return dispatch(device_id, "file_sha256", {"path": path})
+
+
+@mcp.tool()
 def write_file(device_id: str, path: str, content: str, expected_sha256: str | None = None) -> dict[str, Any]:
     """Create UTF-8 text (16 KiB max), update only when supplied SHA-256 matches.
 

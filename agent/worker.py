@@ -203,6 +203,12 @@ class Worker:
         except GitReadOnlyError as exc:
             raise WorkspaceError(str(exc)) from exc
 
+    def file_sha256(self, args: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return WorkspaceEditor(self.root, self.path).file_sha256(args.get("path"))
+        except WorkspaceEditError as exc:
+            raise WorkspaceError(str(exc)) from exc
+
     def write_file(self, args: dict[str, Any]) -> dict[str, Any]:
         if not self.write_enabled:
             raise WorkspaceError("Workspace writes disabled on agent")
@@ -245,7 +251,8 @@ class Worker:
     def dispatch(self, operation: str, args: dict[str, Any]) -> dict[str, Any]:
         operations = {"get_device_info": self.get_device_info, "list_directory": self.list_directory,
                       "read_file": self.read_file, "git_status": self.git_status, "git_diff": self.git_diff, "git_log": self.git_log,
-                      "write_file": self.write_file, "check_syntax": self.check_syntax,
+                      "file_sha256": self.file_sha256, "write_file": self.write_file,
+                      "check_syntax": self.check_syntax,
                       "execute_command": self.execute_command}
         if operation not in operations:
             raise WorkspaceError("Unsupported operation")

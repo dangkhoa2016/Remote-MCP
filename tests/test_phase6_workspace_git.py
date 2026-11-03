@@ -148,3 +148,32 @@ async def test_git_write_flags_on_relay():
     with pytest.raises(HTTPException) as err:
         await state.submit(Dispatch(device_id="local-dev", operation="git_push"))
     assert err.value.status_code == 403
+
+
+
+@pytest.mark.skipif(shutil.which("git") is None, reason="git missing")
+def test_git_reads_extensionless_project_files(tmp_path):
+    _git(tmp_path, "init", "-q")
+    (tmp_path / "Gemfile").write_text("source 'https://rubygems.org'\n", encoding="utf-8")
+    worker = Worker(tmp_path, git_write_enabled=True)
+    assert worker.git_stage({"path": "Gemfile"})["staged"]
+    changes = worker.git_status({})["entries"]
+    assert any(item["path"] == "Gemfile" for item in changes)
+
+
+@pytest.mark.skipif(shutil.which("git") is None, reason="git missing")
+def test_push_requires_separate_token_and_safe_remote(tmp_path, monkeypatch):
+    _git(tmp_path, "init", "-q")
+    _git(tmp_path, "-c", "user.name=Tester", "-c", "user.email=test@example.org",
+         "commit", "--allow-empty", "-q", "-m", "bootstrap")
+    w = Worker(tmp_path, git_write_enabled=True, git_push_enabled=True)
+    branch = subprocess.check_output(
+        ["git", "branch", "--show-current"], cwd=tmp_path, text=True
+    ).strip()
+    monkeypatch.delenv("KRW_GIT_PUSH_TOKEN", raising=False)
+    with pytest.raises(WorkspaceError, match="token"):
+        w.git_push({"branch": branch})
+    _git(tmp_path, "remote", "add", "origin", "ext::untrusted-handler")
+    monkeypatch.setenv("KRW_GIT_PUSH_TOKEN", "x" * 48)
+    with pytest.raises(WorkspaceError, match="HTTPS GitHub"):
+        w.git_push({"branch": branch})

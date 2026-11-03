@@ -1,0 +1,2 @@
+# Agent outbound HTTP dependency only.
+httpx>=0.27,<1

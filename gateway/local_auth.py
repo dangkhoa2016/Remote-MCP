@@ -493,3 +493,7 @@ from gateway.agent_ingress import app as _krw_agent_ingress
 app.include_router(_krw_agent_ingress.router)
 
 init_db()
+
+# Public installer; only explicit read-only Agent files are downloadable.
+from gateway.bootstrap import router as _agent_bootstrap_router
+app.include_router(_agent_bootstrap_router)

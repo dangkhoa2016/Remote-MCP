@@ -99,12 +99,12 @@ def _git(repo: Path, *args: str) -> None:
 @pytest.mark.skipif(shutil.which("git") is None, reason="git missing")
 def test_git_stage_commit_and_branch_switch(tmp_path):
     _git(tmp_path, "init", "-q")
+    _git(tmp_path, "-c", "user.name=Tester", "-c", "user.email=test@example.org",
+         "commit", "--allow-empty", "-q", "-m", "bootstrap")
     w = Worker(tmp_path, git_write_enabled=True)
     (tmp_path / "note.md").write_text("hello", encoding="utf-8")
     assert w.git_stage({"path": "note.md"})["staged"]
     # Keep the working file while removing it from the index.
-    _git(tmp_path, "-c", "user.name=Tester", "-c", "user.email=test@example.org",
-         "commit", "--allow-empty", "-q", "-m", "bootstrap")
     assert w.git_unstage({"path": "note.md"})["unstaged"]
     assert (tmp_path / "note.md").read_text() == "hello"
     assert w.git_stage({"path": "note.md"})["staged"]

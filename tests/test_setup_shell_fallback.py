@@ -4,6 +4,8 @@ from __future__ import annotations
 import hashlib
 import io
 import os
+import shlex
+import sys
 from pathlib import Path
 import subprocess
 import tarfile
@@ -65,7 +67,7 @@ if [[ "$1" == '-m' && "$2" == agent.agent ]]; then
   exit 0
 fi
 exit 90
-""")
+""".replace("/usr/bin/python3", shlex.quote(sys.executable)))
     fake_python.chmod(0o755)
     fake_curl = fakebin / 'curl'
     fake_curl.write_text("""#!/usr/bin/env bash

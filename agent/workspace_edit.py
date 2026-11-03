@@ -110,7 +110,8 @@ class WorkspaceEditor:
         return {'path': path, 'sha256': hashlib.sha256(data).hexdigest(),
                 'bytes_read': len(data)}
 
-    def write_file(self, path: str, content: str, expected_sha256: str | None = None) -> dict:
+    def write_file(self, path: str, content: str, expected_sha256: str | None = None,
+                   overwrite: bool = False) -> dict:
         parts = self._validated(path, EDITABLE_SUFFIXES)
         if not isinstance(content, str) or '\x00' in content:
             raise WorkspaceEditError('Content must be UTF-8 text without NUL')
@@ -120,6 +121,8 @@ class WorkspaceEditor:
             raise WorkspaceEditError('Invalid UTF-8 content') from exc
         if len(payload) > MAX_WRITE_BYTES:
             raise WorkspaceEditError('Content exceeds 1 MiB limit')
+        if type(overwrite) is not bool:
+            raise WorkspaceEditError('overwrite must be boolean')
         if expected_sha256 is not None and (not isinstance(expected_sha256, str)
                                             or not _HASH.fullmatch(expected_sha256)):
             raise WorkspaceEditError('Invalid expected SHA-256')
@@ -141,9 +144,9 @@ class WorkspaceEditor:
                     current = hashlib.sha256(data).hexdigest()
                 finally:
                     os.close(existing)
-                if expected_sha256 is None:
-                    raise WorkspaceEditError('File exists: expected_sha256 required for update')
-                if current != expected_sha256:
+                if expected_sha256 is None and not overwrite:
+                    raise WorkspaceEditError('File exists: supply expected_sha256 or overwrite=true')
+                if expected_sha256 is not None and current != expected_sha256:
                     raise WorkspaceEditError('File changed: SHA-256 mismatch')
                 if not (existing_stat.st_mode & stat.S_IWUSR):
                     raise WorkspaceEditError('Target file is read-only')

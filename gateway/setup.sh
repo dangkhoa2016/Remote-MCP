@@ -80,10 +80,36 @@ while IFS= read -r item; do
 done < <(tar -tzf "$ARCHIVE")
 tar -xzf "$ARCHIVE" -C "$INSTALL_DIR" --no-same-owner
 
-if [[ ! -x "$INSTALL_DIR/.venv/bin/python" ]]; then
-  python3 -m venv "$INSTALL_DIR/.venv" || fail 'Python venv is unavailable (install python3-venv)'
+# Colab sometimes has Python but cannot create a pip-enabled venv (ensurepip
+# fails). Prefer a working venv; otherwise install libraries under an isolated
+# --target directory without modifying the system-wide Python environment.
+VENV_PYTHON="$INSTALL_DIR/.venv/bin/python"
+AGENT_PYTHON=''
+AGENT_EXTRA_PATH=''
+if [[ -x "$VENV_PYTHON" ]] && "$VENV_PYTHON" -m pip --version >/dev/null 2>&1; then
+  info 'Using existing Python virtual environment'
+elif python3 -m venv "$INSTALL_DIR/.venv" >"$TEMP_DIR/venv.log" 2>&1 \
+     && [[ -x "$VENV_PYTHON" ]] \
+     && "$VENV_PYTHON" -m pip --version >/dev/null 2>&1; then
+  info 'Created Python virtual environment'
+else
+  info 'Python venv/ensurepip unavailable; using isolated --target dependencies'
 fi
-"$INSTALL_DIR/.venv/bin/python" -m pip install --disable-pip-version-check -q -r "$INSTALL_DIR/agent-requirements.txt"
+
+if [[ -x "$VENV_PYTHON" ]] && "$VENV_PYTHON" -m pip --version >/dev/null 2>&1; then
+  "$VENV_PYTHON" -m pip install --disable-pip-version-check -q \
+    -r "$INSTALL_DIR/agent-requirements.txt" || fail 'Installing Agent requirements into venv failed'
+  AGENT_PYTHON="$VENV_PYTHON"
+else
+  python3 -m pip --version >/dev/null 2>&1 \
+    || fail 'Python pip is unavailable. Install python3-pip or use an environment with pip.'
+  mkdir -p -- "$INSTALL_DIR/.packages"
+  python3 -m pip install --disable-pip-version-check -q --upgrade \
+    --target "$INSTALL_DIR/.packages" -r "$INSTALL_DIR/agent-requirements.txt" \
+    || fail 'Installing Agent requirements into isolated target failed'
+  AGENT_PYTHON="$(command -v python3)"
+  AGENT_EXTRA_PATH="$INSTALL_DIR/.packages"
+fi
 
 CONFIG_FILE="$CONFIG_DIR/agent.env"
 {
@@ -97,7 +123,8 @@ CONFIG_FILE="$CONFIG_DIR/agent.env"
 chmod 600 "$CONFIG_FILE"
 unset TOKEN KRW_AGENT_TOKEN
 
-printf '#!/usr/bin/env bash\nCONFIG_FILE=%q\n' "$CONFIG_FILE" > "$INSTALL_DIR/start.sh"
+printf '#!/usr/bin/env bash\nCONFIG_FILE=%q\nAGENT_PYTHON=%q\nAGENT_EXTRA_PATH=%q\n' \
+  "$CONFIG_FILE" "$AGENT_PYTHON" "$AGENT_EXTRA_PATH" > "$INSTALL_DIR/start.sh"
 cat >> "$INSTALL_DIR/start.sh" <<'RUNNER'
 set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
@@ -107,7 +134,10 @@ source "$CONFIG_FILE"
 set +a
 export KRW_COMMANDS_ENABLED=0 KRW_ALLOW_TEST_COMMANDS=0
 cd "$SCRIPT_DIR"
-exec "$SCRIPT_DIR/.venv/bin/python" -m agent.agent
+if [[ -n "$AGENT_EXTRA_PATH" ]]; then
+  export PYTHONPATH="$AGENT_EXTRA_PATH${PYTHONPATH:+:$PYTHONPATH}"
+fi
+exec "$AGENT_PYTHON" -m agent.agent
 RUNNER
 chmod 700 "$INSTALL_DIR/start.sh"
 info "Ready: device=$DEVICE_ID workspace=$WORKSPACE"

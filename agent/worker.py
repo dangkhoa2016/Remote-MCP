@@ -11,6 +11,7 @@ import sys
 from pathlib import Path
 from typing import Any
 from agent.git_readonly import GitReadOnly, GitReadOnlyError
+from agent.workspace_edit import WorkspaceEditor, WorkspaceEditError
 
 MAX_FILE_BYTES = 32_768
 MAX_DIRECTORY_ENTRIES = 150
@@ -39,12 +40,15 @@ class WorkspaceError(Exception):
 
 
 class Worker:
-    def __init__(self, root: Path, commands_enabled: bool = False, tests_enabled: bool = False):
+    def __init__(self, root: Path, commands_enabled: bool = False, tests_enabled: bool = False,
+                 write_enabled: bool = False, checks_enabled: bool = False):
         self.root = root.resolve(strict=True)
         if not self.root.is_dir():
             raise ValueError("Workspace root must be a directory")
         self.commands_enabled = commands_enabled
         self.tests_enabled = tests_enabled
+        self.write_enabled = write_enabled
+        self.checks_enabled = checks_enabled
 
     def path(self, requested: str) -> Path:
         if not isinstance(requested, str) or len(requested) > 400 or "\x00" in requested:
@@ -199,6 +203,23 @@ class Worker:
         except GitReadOnlyError as exc:
             raise WorkspaceError(str(exc)) from exc
 
+    def write_file(self, args: dict[str, Any]) -> dict[str, Any]:
+        if not self.write_enabled:
+            raise WorkspaceError("Workspace writes disabled on agent")
+        try:
+            return WorkspaceEditor(self.root, self.path).write_file(
+                args.get("path"), args.get("content"), args.get("expected_sha256"))
+        except WorkspaceEditError as exc:
+            raise WorkspaceError(str(exc)) from exc
+
+    def check_syntax(self, args: dict[str, Any]) -> dict[str, Any]:
+        if not self.checks_enabled:
+            raise WorkspaceError("Static checks disabled on agent")
+        try:
+            return WorkspaceEditor(self.root, self.path).check_syntax(args.get("path"))
+        except WorkspaceEditError as exc:
+            raise WorkspaceError(str(exc)) from exc
+
     def execute_command(self, args: dict[str, Any]) -> dict[str, Any]:
         if not self.commands_enabled:
             raise WorkspaceError("Command execution disabled on agent")
@@ -223,7 +244,9 @@ class Worker:
 
     def dispatch(self, operation: str, args: dict[str, Any]) -> dict[str, Any]:
         operations = {"get_device_info": self.get_device_info, "list_directory": self.list_directory,
-                      "read_file": self.read_file, "git_status": self.git_status, "git_diff": self.git_diff, "git_log": self.git_log, "execute_command": self.execute_command}
+                      "read_file": self.read_file, "git_status": self.git_status, "git_diff": self.git_diff, "git_log": self.git_log,
+                      "write_file": self.write_file, "check_syntax": self.check_syntax,
+                      "execute_command": self.execute_command}
         if operation not in operations:
             raise WorkspaceError("Unsupported operation")
         return operations[operation](args)

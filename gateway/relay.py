@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 
 LOG = logging.getLogger("krw.gateway")
 DEVICE_ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
-VALID_OPERATIONS = {"get_device_info", "list_directory", "read_file", "git_status", "git_diff", "git_log", "execute_command"}
+VALID_OPERATIONS = {"get_device_info", "list_directory", "read_file", "git_status", "git_diff", "git_log", "write_file", "check_syntax", "execute_command"}
 
 
 class Registration(BaseModel):
@@ -41,7 +41,7 @@ class Result(BaseModel):
 
 class Dispatch(BaseModel):
     device_id: str
-    operation: Literal["get_device_info", "list_directory", "read_file", "git_status", "git_diff", "git_log", "execute_command"]
+    operation: Literal["get_device_info", "list_directory", "read_file", "git_status", "git_diff", "git_log", "write_file", "check_syntax", "execute_command"]
     arguments: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -53,7 +53,8 @@ class Device:
 
 
 class State:
-    def __init__(self, device_tokens: dict[str, str], control_token: str, commands_enabled: bool = False):
+    def __init__(self, device_tokens: dict[str, str], control_token: str, commands_enabled: bool = False,
+                 writes_enabled: bool = False, checks_enabled: bool = False):
         if not device_tokens or any(not DEVICE_ID_RE.fullmatch(k) or len(v) < 32 for k, v in device_tokens.items()):
             raise ValueError("Configure one or more device IDs and >=32-character tokens")
         if len(control_token) < 32:
@@ -61,6 +62,8 @@ class State:
         self.device_tokens = device_tokens
         self.control_token = control_token
         self.commands_enabled = commands_enabled
+        self.writes_enabled = writes_enabled
+        self.checks_enabled = checks_enabled
         self.devices: dict[str, Device] = {}
         self.pending: dict[str, tuple[str, asyncio.Future]] = {}
         self.lock = asyncio.Lock()
@@ -118,6 +121,10 @@ class State:
             raise HTTPException(400, "Operation not supported")
         if req.operation == "execute_command" and not self.commands_enabled:
             raise HTTPException(403, "Command execution disabled on gateway")
+        if req.operation == "write_file" and not self.writes_enabled:
+            raise HTTPException(403, "Workspace writes disabled on gateway")
+        if req.operation == "check_syntax" and not self.checks_enabled:
+            raise HTTPException(403, "Static checks disabled on gateway")
         async with self.lock:
             device = self.devices.get(req.device_id)
             if not device or not self.online(device):
@@ -159,7 +166,10 @@ def state_from_env() -> State:
         raise ValueError("Set KRW_DEVICE_TOKENS_JSON to a JSON object") from e
     if not isinstance(tokens, dict):
         raise ValueError("KRW_DEVICE_TOKENS_JSON must be a JSON object")
-    return State(tokens, os.getenv("KRW_CONTROL_TOKEN", ""), os.getenv("KRW_COMMANDS_ENABLED", "0") == "1")
+    return State(tokens, os.getenv("KRW_CONTROL_TOKEN", ""),
+                 commands_enabled=os.getenv("KRW_COMMANDS_ENABLED", "0") == "1",
+                 writes_enabled=os.getenv("KRW_WRITE_ENABLED", "0") == "1",
+                 checks_enabled=os.getenv("KRW_STATIC_CHECKS_ENABLED", "0") == "1")
 
 
 def create_app(state: State) -> FastAPI:
@@ -192,8 +202,9 @@ def create_app(state: State) -> FastAPI:
     async def capabilities(x_control_token: str | None = Header(default=None)):
         state.check_control(x_control_token)
         return {"mode": "device-relay", "device_agent_connected": any(state.online(d) for d in state.devices.values()),
-                "available_tools": ["health_check", "list_capabilities", "list_devices", "get_device_info", "list_directory", "read_file", "git_status", "git_diff", "git_log", "execute_command"],
-                "filesystem_access": True, "command_execution": state.commands_enabled}
+                "available_tools": ["health_check", "list_capabilities", "list_devices", "get_device_info", "list_directory", "read_file", "git_status", "git_diff", "git_log", "write_file", "check_syntax", "execute_command"],
+                "filesystem_access": True, "command_execution": state.commands_enabled,
+                "filesystem_writes": state.writes_enabled, "static_checks": state.checks_enabled}
 
     @app.get("/v1/control/devices")
     async def list_devices(x_control_token: str | None = Header(default=None)):

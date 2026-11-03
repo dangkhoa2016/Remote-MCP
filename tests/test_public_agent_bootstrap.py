@@ -49,7 +49,7 @@ def test_only_explicit_agent_files_are_downloadable(app_client):
     with tarfile.open(fileobj=io.BytesIO(data), mode='r:gz') as tf:
         assert sorted(tf.getnames()) == sorted([
             'agent/__init__.py', 'agent/agent.py', 'agent/worker.py',
-            'agent/git_readonly.py', 'agent-requirements.txt',
+            'agent/git_readonly.py', 'agent/workspace_edit.py', 'agent-requirements.txt',
         ])
         assert all(m.isfile() and m.uid == 0 and m.gid == 0 for m in tf.getmembers())
 

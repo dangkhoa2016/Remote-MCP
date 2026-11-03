@@ -74,7 +74,7 @@ printf '%s  %s\n' "$EXPECTED_SHA256" "$ARCHIVE" | sha256sum -c - >/dev/null \
 
 while IFS= read -r item; do
   case "$item" in
-    agent/__init__.py|agent/agent.py|agent/worker.py|agent/git_readonly.py|agent-requirements.txt) ;;
+    agent/__init__.py|agent/agent.py|agent/worker.py|agent/git_readonly.py|agent/workspace_edit.py|agent-requirements.txt) ;;
     *) fail 'Unexpected file in Agent bundle' ;;
   esac
 done < <(tar -tzf "$ARCHIVE")
@@ -119,6 +119,8 @@ CONFIG_FILE="$CONFIG_DIR/agent.env"
   printf 'KRW_RELAY_URL=%q\n' "$BASE_URL"
   printf 'KRW_COMMANDS_ENABLED=0\n'
   printf 'KRW_ALLOW_TEST_COMMANDS=0\n'
+  printf 'KRW_ALLOW_FILE_WRITES=0\n'
+  printf 'KRW_ALLOW_STATIC_CHECKS=0\n'
 } >"$CONFIG_FILE"
 chmod 600 "$CONFIG_FILE"
 unset TOKEN KRW_AGENT_TOKEN

@@ -19,7 +19,7 @@ def _bundle(tmp_path: Path) -> Path:
     bundle = tmp_path / 'bundle.tar.gz'
     with tarfile.open(bundle, 'w:gz') as tar:
         for name in ('agent/__init__.py', 'agent/agent.py', 'agent/worker.py',
-                     'agent/git_readonly.py', 'agent-requirements.txt'):
+                     'agent/git_readonly.py', 'agent/workspace_edit.py', 'agent-requirements.txt'):
             raw = b'httpx>=0.27,<1\n' if name.endswith('requirements.txt') else b'# test\n'
             meta = tarfile.TarInfo(name)
             meta.size = len(raw)

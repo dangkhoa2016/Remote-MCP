@@ -86,6 +86,27 @@ class WorkspaceEditor:
             raise WorkspaceEditError('Target must be a regular file')
         return fd
 
+    def file_sha256(self, path: str) -> dict:
+        """Read-only SHA-256 of one existing allowed text source (max 256 KiB)."""
+        parts = self._validated(path, EDITABLE_SUFFIXES)
+        parent = self._parent_fd(parts)
+        try:
+            fd = self._open_existing(parent, parts[-1])
+            if fd is None:
+                raise WorkspaceEditError('File missing')
+            try:
+                if os.fstat(fd).st_size > MAX_EXISTING_BYTES:
+                    raise WorkspaceEditError('File too large to hash')
+                data = os.read(fd, MAX_EXISTING_BYTES + 1)
+                if len(data) > MAX_EXISTING_BYTES:
+                    raise WorkspaceEditError('File too large to hash')
+            finally:
+                os.close(fd)
+        finally:
+            os.close(parent)
+        return {'path': path, 'sha256': hashlib.sha256(data).hexdigest(),
+                'bytes_read': len(data)}
+
     def write_file(self, path: str, content: str, expected_sha256: str | None = None) -> dict:
         parts = self._validated(path, EDITABLE_SUFFIXES)
         if not isinstance(content, str) or '\x00' in content:
@@ -204,5 +225,5 @@ class WorkspaceEditor:
                 tomllib.loads(decoded)
         except (SyntaxError, json.JSONDecodeError, tomllib.TOMLDecodeError) as exc:
             return {'path': path, 'language': suffix.lstrip('.'), 'valid': False,
-                    'line': getattr(exc, 'lineno', None), 'error': type(exc).__name__}
+                    'executed': False, 'line': getattr(exc, 'lineno', None), 'error': type(exc).__name__}
         return {'path': path, 'language': suffix.lstrip('.'), 'valid': True, 'executed': False}

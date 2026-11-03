@@ -65,6 +65,18 @@ def test_optional_hash_and_exact_replacement_guards(tmp_path: Path):
     assert worker.delete_file({"path": "note.txt", "expected_sha256": sha("other other")})["deleted"]
 
 
+def test_explicit_overwrite_without_hash(tmp_path: Path):
+    worker = Worker(tmp_path, write_enabled=True)
+    worker.write_file({"path": "note.md", "content": "before"})
+    updated = worker.write_file({"path": "note.md", "content": "after", "overwrite": True})
+    assert updated["action"] == "updated"
+    assert (tmp_path / "note.md").read_text() == "after"
+    with pytest.raises(WorkspaceError, match="mismatch"):
+        worker.write_file({"path": "note.md", "content": "bad", "overwrite": True,
+                           "expected_sha256": "0" * 64})
+    assert (tmp_path / "note.md").read_text() == "after"
+
+
 def test_move_refuses_existing_target(tmp_path: Path):
     worker = Worker(tmp_path, write_enabled=True)
     worker.write_file({"path": "a.md", "content": "source"})

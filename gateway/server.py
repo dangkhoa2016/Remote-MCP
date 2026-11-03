@@ -61,7 +61,7 @@ def dispatch(device_id: str, operation: str, args: dict) -> dict[str, Any]:
 @mcp.tool()
 def health_check() -> dict[str, str]:
     """Verify the MCP server is reachable after authenticating, without accessing devices."""
-    return {"service": "khoa-remote-workspace", "version": "0.7.0", "status": "ok",
+    return {"service": "khoa-remote-workspace", "version": "0.7.1", "status": "ok",
             "mode": "local-login-read" if MCP_TOOLS_ENABLED else "locked"}
 
 

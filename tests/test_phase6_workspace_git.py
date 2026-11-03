@@ -102,12 +102,18 @@ def test_git_stage_commit_and_branch_switch(tmp_path):
     w = Worker(tmp_path, git_write_enabled=True)
     (tmp_path / "note.md").write_text("hello", encoding="utf-8")
     assert w.git_stage({"path": "note.md"})["staged"]
+    # Keep the working file while removing it from the index.
+    _git(tmp_path, "commit", "--allow-empty", "-q", "-m", "bootstrap", "--author", "Tester <test@example.org>")
+    assert w.git_unstage({"path": "note.md"})["unstaged"]
+    assert (tmp_path / "note.md").read_text() == "hello"
+    assert w.git_stage({"path": "note.md"})["staged"]
     commit = w.git_commit({"message": "test: add note",
                            "author_name": "Remote Workspace",
                            "author_email": "remote@example.test"})
     assert len(commit["sha"]) == 40
     assert "note.md" in [e["path"] for e in w.git_status({})["entries"]] or w.git_status({})["entries"] == []
     assert w.git_branch_create({"branch": "feature-test"})["created"]
+    assert "feature-test" in w.git_branches({})["branches"]
     assert w.git_branch_switch({"branch": "feature-test"})["switched"]
     assert w.git_branch_create({"branch": "another-feature"})["created"]
     with pytest.raises(WorkspaceError):

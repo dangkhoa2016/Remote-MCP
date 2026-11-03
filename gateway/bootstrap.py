@@ -23,6 +23,8 @@ AGENT_FILES = (
     'agent/agent.py',
     'agent/worker.py',
     'agent/git_readonly.py',
+    'agent/git_write.py',
+    'agent/workspace_routes.py',
     'agent/workspace_edit.py',
     'agent/workspace_manage.py',
     'gateway/agent-requirements.txt',

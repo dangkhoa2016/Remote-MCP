@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 
 LOG = logging.getLogger("krw.gateway")
 DEVICE_ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
-VALID_OPERATIONS = {"get_device_info", "list_directory", "read_file", "git_status", "git_diff", "git_log", "file_sha256", "write_file", "check_syntax", "execute_command"}
+VALID_OPERATIONS = {"get_device_info", "list_directory", "read_file", "git_status", "git_diff", "git_log", "file_sha256", "write_file", "check_syntax", "execute_command", "edit_file", "search_files", "create_directory", "move_file", "delete_file"}
 
 
 class Registration(BaseModel):
@@ -41,7 +41,7 @@ class Result(BaseModel):
 
 class Dispatch(BaseModel):
     device_id: str
-    operation: Literal["get_device_info", "list_directory", "read_file", "git_status", "git_diff", "git_log", "file_sha256", "write_file", "check_syntax", "execute_command"]
+    operation: Literal["get_device_info", "list_directory", "read_file", "git_status", "git_diff", "git_log", "file_sha256", "write_file", "check_syntax", "execute_command", "edit_file", "search_files", "create_directory", "move_file", "delete_file"]
     arguments: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -121,7 +121,7 @@ class State:
             raise HTTPException(400, "Operation not supported")
         if req.operation == "execute_command" and not self.commands_enabled:
             raise HTTPException(403, "Command execution disabled on gateway")
-        if req.operation == "write_file" and not self.writes_enabled:
+        if req.operation in {"write_file", "edit_file", "create_directory", "move_file", "delete_file"} and not self.writes_enabled:
             raise HTTPException(403, "Workspace writes disabled on gateway")
         if req.operation == "check_syntax" and not self.checks_enabled:
             raise HTTPException(403, "Static checks disabled on gateway")
@@ -153,7 +153,7 @@ class State:
         if future.done():
             raise HTTPException(409, "Job already completed")
         encoded = json.dumps(result.data, ensure_ascii=False)
-        if len(encoded.encode("utf-8")) > 48_000:
+        if len(encoded.encode("utf-8")) > 786_432:
             raise HTTPException(413, "Result too large")
         future.set_result({"ok": result.ok, "data": result.data, "error": (result.error or "")[:512]})
 
@@ -202,7 +202,7 @@ def create_app(state: State) -> FastAPI:
     async def capabilities(x_control_token: str | None = Header(default=None)):
         state.check_control(x_control_token)
         return {"mode": "device-relay", "device_agent_connected": any(state.online(d) for d in state.devices.values()),
-                "available_tools": ["health_check", "list_capabilities", "list_devices", "get_device_info", "list_directory", "read_file", "git_status", "git_diff", "git_log", "file_sha256", "write_file", "check_syntax", "execute_command"],
+                "available_tools": ["health_check", "list_capabilities", "list_devices", "get_device_info", "list_directory", "read_file", "git_status", "git_diff", "git_log", "file_sha256", "write_file", "check_syntax", "execute_command", "edit_file", "search_files", "create_directory", "move_file", "delete_file"],
                 "filesystem_access": True, "command_execution": state.commands_enabled,
                 "filesystem_writes": state.writes_enabled, "static_checks": state.checks_enabled}
 

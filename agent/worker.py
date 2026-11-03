@@ -47,6 +47,8 @@ class Worker:
             raise ValueError("Workspace root must be a directory")
         self.commands_enabled = commands_enabled
         self.tests_enabled = tests_enabled
+        if write_enabled and self.root in {Path("/"), Path("/content"), Path.home().resolve()}:
+            raise ValueError("Workspace root too broad for enabled writes")
         self.write_enabled = write_enabled
         self.checks_enabled = checks_enabled
 

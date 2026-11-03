@@ -11,6 +11,7 @@ import sys
 from pathlib import Path
 from typing import Any
 from agent.git_readonly import GitReadOnly, GitReadOnlyError
+from agent.git_write import GitWrite
 from agent.workspace_edit import WorkspaceEditor, WorkspaceEditError
 from agent.workspace_manage import WorkspaceManager
 
@@ -42,7 +43,8 @@ class WorkspaceError(Exception):
 
 class Worker:
     def __init__(self, root: Path, commands_enabled: bool = False, tests_enabled: bool = False,
-                 write_enabled: bool = False, checks_enabled: bool = False):
+                 write_enabled: bool = False, checks_enabled: bool = False,
+                 git_write_enabled: bool = False, git_push_enabled: bool = False):
         self.root = root.resolve(strict=True)
         if not self.root.is_dir():
             raise ValueError("Workspace root must be a directory")
@@ -52,6 +54,8 @@ class Worker:
             raise ValueError("Workspace root too broad for enabled writes")
         self.write_enabled = write_enabled
         self.checks_enabled = checks_enabled
+        self.git_write_enabled = git_write_enabled
+        self.git_push_enabled = git_push_enabled
 
     def path(self, requested: str) -> Path:
         if not isinstance(requested, str) or len(requested) > 400 or "\x00" in requested:
@@ -267,6 +271,67 @@ class Worker:
         except WorkspaceEditError as exc:
             raise WorkspaceError(str(exc)) from exc
 
+    def move_directory(self, args: dict[str, Any]) -> dict[str, Any]:
+        if not self.write_enabled:
+            raise WorkspaceError("Workspace writes disabled on agent")
+        try:
+            return WorkspaceManager(self.root, self.path).move_directory(
+                args.get("source"), args.get("destination"))
+        except WorkspaceEditError as exc:
+            raise WorkspaceError(str(exc)) from exc
+
+    def delete_directory(self, args: dict[str, Any]) -> dict[str, Any]:
+        if not self.write_enabled:
+            raise WorkspaceError("Workspace writes disabled on agent")
+        try:
+            return WorkspaceManager(self.root, self.path).delete_directory(
+                args.get("path"), args.get("recursive", False),
+                args.get("max_entries", 1000))
+        except WorkspaceEditError as exc:
+            raise WorkspaceError(str(exc)) from exc
+
+    def _git_write(self) -> GitWrite:
+        if not self.git_write_enabled:
+            raise WorkspaceError("Git write operations disabled on agent")
+        try:
+            return GitWrite(self.root, self.path)
+        except GitReadOnlyError as exc:
+            raise WorkspaceError(str(exc)) from exc
+
+    def git_stage(self, args: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return self._git_write().stage(args.get("path"))
+        except GitReadOnlyError as exc:
+            raise WorkspaceError(str(exc)) from exc
+
+    def git_commit(self, args: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return self._git_write().commit(
+                args.get("message"), args.get("author_name"), args.get("author_email"))
+        except GitReadOnlyError as exc:
+            raise WorkspaceError(str(exc)) from exc
+
+    def git_branch_create(self, args: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return self._git_write().branch_create(args.get("branch"))
+        except GitReadOnlyError as exc:
+            raise WorkspaceError(str(exc)) from exc
+
+    def git_branch_switch(self, args: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return self._git_write().branch_switch(args.get("branch"))
+        except GitReadOnlyError as exc:
+            raise WorkspaceError(str(exc)) from exc
+
+    def git_push(self, args: dict[str, Any]) -> dict[str, Any]:
+        if not self.git_push_enabled:
+            raise WorkspaceError("Git push disabled on agent")
+        try:
+            return self._git_write().push(
+                args.get("branch"), os.getenv("KRW_GIT_PUSH_TOKEN", ""))
+        except GitReadOnlyError as exc:
+            raise WorkspaceError(str(exc)) from exc
+
     def check_syntax(self, args: dict[str, Any]) -> dict[str, Any]:
         if not self.checks_enabled:
             raise WorkspaceError("Static checks disabled on agent")
@@ -303,7 +368,11 @@ class Worker:
                       "file_sha256": self.file_sha256, "write_file": self.write_file,
                       "edit_file": self.edit_file, "search_files": self.search_files,
                       "create_directory": self.create_directory, "move_file": self.move_file,
-                      "delete_file": self.delete_file,
+                      "delete_file": self.delete_file, "move_directory": self.move_directory,
+                      "delete_directory": self.delete_directory,
+                      "git_stage": self.git_stage, "git_commit": self.git_commit,
+                      "git_branch_create": self.git_branch_create,
+                      "git_branch_switch": self.git_branch_switch, "git_push": self.git_push,
                       "check_syntax": self.check_syntax,
                       "execute_command": self.execute_command}
         if operation not in operations:

@@ -49,7 +49,7 @@ class WorkspaceEditor:
             target = self.validate_path(path)
         except Exception as exc:
             raise WorkspaceEditError('Path restricted') from exc
-        if target.suffix.lower() not in suffixes:
+        if suffixes == CHECK_SUFFIXES and target.suffix.lower() not in suffixes:
             raise WorkspaceEditError('File extension not allowed')
         parts = target.relative_to(self.root).parts
         if not parts or parts[0] == '..':

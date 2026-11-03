@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 from fastapi import HTTPException
 from agent.worker import Worker, WorkspaceError
+from agent.workspace_edit import MAX_WRITE_BYTES, MAX_EXISTING_BYTES
 from gateway.relay import State, Dispatch
 
 
@@ -67,11 +68,11 @@ def test_symlink_paths_denied(tmp_path):
 def test_limits_immutable_on_failure(tmp_path):
     w = Worker(tmp_path, write_enabled=True)
     (tmp_path/'a.txt').write_text('original')
-    for content in ('a'*16385,'x\x00y'):
+    for content in ('a'*(MAX_WRITE_BYTES + 1),'x\x00y'):
         with pytest.raises(WorkspaceError):
             w.write_file({'path':'a.txt','content':content,'expected_sha256':digest('original')})
     assert (tmp_path/'a.txt').read_text() == 'original'
-    (tmp_path/'big.md').write_text('x'*262145)
+    (tmp_path/'big.md').write_text('x'*(MAX_EXISTING_BYTES + 1))
     with pytest.raises(WorkspaceError, match='too large'):
         w.file_sha256({'path':'big.md'})
 

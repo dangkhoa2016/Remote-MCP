@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 
 LOG = logging.getLogger("krw.gateway")
 DEVICE_ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
-VALID_OPERATIONS = {"get_device_info", "list_directory", "read_file", "git_status", "git_diff", "git_log", "file_sha256", "write_file", "check_syntax", "execute_command", "edit_file", "search_files", "create_directory", "move_file", "delete_file", "list_workspaces", "move_directory", "delete_directory", "git_stage", "git_commit", "git_branch_create", "git_branch_switch", "git_push"}
+VALID_OPERATIONS = {"get_device_info", "list_directory", "read_file", "git_status", "git_diff", "git_log", "file_sha256", "write_file", "check_syntax", "execute_command", "edit_file", "search_files", "create_directory", "move_file", "delete_file", "list_workspaces", "move_directory", "delete_directory", "git_stage", "git_commit", "git_branch_create", "git_branch_switch", "git_push", "git_branches", "git_unstage"}
 
 
 class Registration(BaseModel):
@@ -41,7 +41,7 @@ class Result(BaseModel):
 
 class Dispatch(BaseModel):
     device_id: str
-    operation: Literal["get_device_info", "list_directory", "read_file", "git_status", "git_diff", "git_log", "file_sha256", "write_file", "check_syntax", "execute_command", "edit_file", "search_files", "create_directory", "move_file", "delete_file", "list_workspaces", "move_directory", "delete_directory", "git_stage", "git_commit", "git_branch_create", "git_branch_switch", "git_push"]
+    operation: Literal["get_device_info", "list_directory", "read_file", "git_status", "git_diff", "git_log", "file_sha256", "write_file", "check_syntax", "execute_command", "edit_file", "search_files", "create_directory", "move_file", "delete_file", "list_workspaces", "move_directory", "delete_directory", "git_stage", "git_commit", "git_branch_create", "git_branch_switch", "git_push", "git_branches", "git_unstage"]
     arguments: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -126,7 +126,7 @@ class State:
             raise HTTPException(403, "Command execution disabled on gateway")
         if req.operation in {"write_file", "edit_file", "create_directory", "move_file", "delete_file", "move_directory", "delete_directory"} and not self.writes_enabled:
             raise HTTPException(403, "Workspace writes disabled on gateway")
-        if req.operation in {"git_stage", "git_commit", "git_branch_create", "git_branch_switch", "git_push"} and not self.git_writes_enabled:
+        if req.operation in {"git_stage", "git_commit", "git_branch_create", "git_branch_switch", "git_push", "git_unstage"} and not self.git_writes_enabled:
             raise HTTPException(403, "Git writes disabled on gateway")
         if req.operation == "git_push" and not self.git_push_enabled:
             raise HTTPException(403, "Git push disabled on gateway")
@@ -211,7 +211,7 @@ def create_app(state: State) -> FastAPI:
     async def capabilities(x_control_token: str | None = Header(default=None)):
         state.check_control(x_control_token)
         return {"mode": "device-relay", "device_agent_connected": any(state.online(d) for d in state.devices.values()),
-                "available_tools": ["health_check", "list_capabilities", "list_devices", "get_device_info", "list_directory", "read_file", "git_status", "git_diff", "git_log", "file_sha256", "write_file", "check_syntax", "execute_command", "edit_file", "search_files", "create_directory", "move_file", "delete_file", "list_workspaces", "move_directory", "delete_directory", "git_stage", "git_commit", "git_branch_create", "git_branch_switch", "git_push"],
+                "available_tools": ["health_check", "list_capabilities", "list_devices", "get_device_info", "list_directory", "read_file", "git_status", "git_diff", "git_log", "file_sha256", "write_file", "check_syntax", "execute_command", "edit_file", "search_files", "create_directory", "move_file", "delete_file", "list_workspaces", "move_directory", "delete_directory", "git_stage", "git_commit", "git_branch_create", "git_branch_switch", "git_push", "git_branches", "git_unstage"],
                 "filesystem_access": True, "command_execution": state.commands_enabled,
                 "filesystem_writes": state.writes_enabled, "static_checks": state.checks_enabled,
                 "git_writes": state.git_writes_enabled, "git_push": state.git_push_enabled}

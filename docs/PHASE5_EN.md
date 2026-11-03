@@ -29,7 +29,7 @@ The previous `write_file`, `read_file`, `file_sha256` and `check_syntax` remain 
 On Render, set `KRW_WRITE_ENABLED=1` to enable write/move/delete actions.
 On each Agent, set `KRW_ALLOW_FILE_WRITES=1`. Existing Phase 4-C write flags can be reused.
 `search_files` is read-only and requires no write permission.
-After deploying the Gateway, update/restart the Agent using the verified installer so the new Worker module is installed. Then refresh ChatGPT tool discovery. Do not run commands from an unreviewed installer.
+After deploying the Gateway, stop the existing Agent and rerun the verified installer. It reuses your existing owner-owned local Agent configuration (device ID, token, workspace, and file-write/static-check flags); no re-entry is needed. Then refresh ChatGPT tool discovery. Do not run commands from an unreviewed installer.
 
 ## Deployment gate
 

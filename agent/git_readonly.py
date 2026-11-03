@@ -117,6 +117,15 @@ class GitReadOnly:
         return {'path': safe_path, 'staged': staged, 'diff': text[:MAX_DIFF_CHARS],
                 'truncated': len(text) > MAX_DIFF_CHARS, 'read_only': True}
 
+    def branches(self) -> dict:
+        raw = self._run(["branch", "--format=%(refname:short)"], max_output=16384)
+        names = []
+        for name in raw.decode("utf-8", "replace").splitlines():
+            if name and len(name) <= 128:
+                names.append(name)
+        current = self._run(["branch", "--show-current"]).decode("utf-8", "replace").strip()
+        return {"branches": names[:100], "current": current, "read_only": True}
+
     def log(self, count: int = 10) -> dict:
         if type(count) is not int or not 1 <= count <= 20:
             raise GitReadOnlyError('count must be between 1 and 20')

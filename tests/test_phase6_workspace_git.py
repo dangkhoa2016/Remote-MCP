@@ -87,7 +87,7 @@ def test_recursive_delete_rejects_symlinks_and_git(tmp_path):
     with pytest.raises(WorkspaceError):
         w.delete_directory({"path": "unsafe", "recursive": True})
     assert (tmp_path / "unsafe" / "alias").is_symlink()
-    w.create_directory({"path": "gitfolder/.git"})
+    (tmp_path / "gitfolder" / ".git").mkdir(parents=True)
     with pytest.raises(WorkspaceError, match="restricted"):
         w.delete_directory({"path": "gitfolder", "recursive": True})
 

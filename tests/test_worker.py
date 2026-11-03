@@ -41,4 +41,4 @@ def test_file_size_limit(tmp_path):
     result = worker.read_file({"path": "large.txt", "max_bytes": 8000})
     assert len(result["content"]) == 8000 and result["truncated"]
     with pytest.raises(WorkspaceError):
-        worker.read_file({"path": "large.txt", "max_bytes": 99000})
+        worker.read_file({"path": "large.txt", "max_bytes": 262145})

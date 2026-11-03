@@ -103,7 +103,8 @@ def test_git_stage_commit_and_branch_switch(tmp_path):
     (tmp_path / "note.md").write_text("hello", encoding="utf-8")
     assert w.git_stage({"path": "note.md"})["staged"]
     # Keep the working file while removing it from the index.
-    _git(tmp_path, "commit", "--allow-empty", "-q", "-m", "bootstrap", "--author", "Tester <test@example.org>")
+    _git(tmp_path, "-c", "user.name=Tester", "-c", "user.email=test@example.org",
+         "commit", "--allow-empty", "-q", "-m", "bootstrap")
     assert w.git_unstage({"path": "note.md"})["unstaged"]
     assert (tmp_path / "note.md").read_text() == "hello"
     assert w.git_stage({"path": "note.md"})["staged"]

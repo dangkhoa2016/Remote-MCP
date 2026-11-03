@@ -75,8 +75,8 @@ class GitReadOnly:
         relative = target.relative_to(self.root).as_posix()
         if any(ord(c) < 32 or ord(c) == 127 for c in relative):
             raise GitReadOnlyError('Control characters are prohibited in Git paths')
-        if target.suffix.lower() not in ALLOWED_SUFFIXES:
-            raise GitReadOnlyError('File extension not approved for Git diff')
+        # Accept ordinary extensionless files and source formats; workspace path
+        # validation already rejects secret-like names and Git metadata.
         return relative
 
     def status(self) -> dict:

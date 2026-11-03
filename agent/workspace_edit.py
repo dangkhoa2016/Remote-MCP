@@ -20,9 +20,9 @@ except ModuleNotFoundError:  # Python 3.10 Agent
 from pathlib import Path
 from typing import Callable
 
-MAX_WRITE_BYTES = 16_384
-MAX_EXISTING_BYTES = 262_144
-MAX_CHECK_BYTES = 262_144
+MAX_WRITE_BYTES = 1_048_576
+MAX_EXISTING_BYTES = 2_097_152
+MAX_CHECK_BYTES = 1_048_576
 EDITABLE_SUFFIXES = frozenset({
     '.py', '.md', '.txt', '.json', '.toml', '.ini', '.yml', '.yaml',
     '.rb', '.erb', '.js', '.ts', '.css', '.html', '.sql',
@@ -119,7 +119,7 @@ class WorkspaceEditor:
         except UnicodeEncodeError as exc:
             raise WorkspaceEditError('Invalid UTF-8 content') from exc
         if len(payload) > MAX_WRITE_BYTES:
-            raise WorkspaceEditError('Content exceeds 16 KiB limit')
+            raise WorkspaceEditError('Content exceeds 1 MiB limit')
         if expected_sha256 is not None and (not isinstance(expected_sha256, str)
                                             or not _HASH.fullmatch(expected_sha256)):
             raise WorkspaceEditError('Invalid expected SHA-256')

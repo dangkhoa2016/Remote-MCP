@@ -217,7 +217,8 @@ class Worker:
             raise WorkspaceError("Workspace writes disabled on agent")
         try:
             return WorkspaceEditor(self.root, self.path).write_file(
-                args.get("path"), args.get("content"), args.get("expected_sha256"))
+                args.get("path"), args.get("content"), args.get("expected_sha256"),
+                args.get("overwrite", False))
         except WorkspaceEditError as exc:
             raise WorkspaceError(str(exc)) from exc
 

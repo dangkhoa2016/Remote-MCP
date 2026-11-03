@@ -8,7 +8,7 @@ Phase 6 mở rộng Agent kết nối một chiều mà không bật shell tùy 
 - Các công cụ đọc/ghi file, thư mục và Git hiện có nhận thêm `workspace_id` tùy chọn (mặc định `default`, tương thích Phase 5).
 - `move_directory`: đổi vị trí/tên thư mục trong một workspace, không chủ ý ghi đè thư mục đích.
 - `delete_directory`: xóa thư mục trống; chọn rõ `recursive=true` để xóa cả nội dung (tối đa 1.000 mục và 16 cấp). Không xử lý symlink, tên giống file bí mật hoặc metadata Git. Nếu filesystem thay đổi đồng thời, thao tác có thể xóa được một phần.
-- `git_stage`: stage từng file; `git_commit`: commit với message và danh tính tác giả; `git_branch_create` / `git_branch_switch`: quản lý nhánh cục bộ. Các lệnh quản lý này vô hiệu hóa hooks và ký commit.
+- `git_branches`: xem nhánh cục bộ và nhánh hiện tại (chỉ đọc). `git_stage` / `git_unstage`: thêm hoặc bỏ stage từng file. `git_commit`: commit với message và danh tính tác giả; `git_branch_create` / `git_branch_switch`: quản lý nhánh cục bộ. Các lệnh quản lý này vô hiệu hóa hooks và ký commit.
 - `git_push`: chỉ push nhánh đang checkout lên remote `origin` HTTPS `github.com`, không force. Push cần bật quyền riêng và token GitHub được lưu ở Agent, bên ngoài workspace.
 
 ## Khai báo nhiều workspace trên Agent

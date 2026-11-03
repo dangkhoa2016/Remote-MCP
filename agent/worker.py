@@ -197,6 +197,12 @@ class Worker:
         except GitReadOnlyError as exc:
             raise WorkspaceError(str(exc)) from exc
 
+    def git_branches(self, args: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return GitReadOnly(self.root, self.path).branches()
+        except GitReadOnlyError as exc:
+            raise WorkspaceError(str(exc)) from exc
+
     def git_diff(self, args: dict[str, Any]) -> dict[str, Any]:
         try:
             return GitReadOnly(self.root, self.path).diff(
@@ -304,6 +310,12 @@ class Worker:
         except GitReadOnlyError as exc:
             raise WorkspaceError(str(exc)) from exc
 
+    def git_unstage(self, args: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return self._git_write().unstage(args.get("path"))
+        except GitReadOnlyError as exc:
+            raise WorkspaceError(str(exc)) from exc
+
     def git_commit(self, args: dict[str, Any]) -> dict[str, Any]:
         try:
             return self._git_write().commit(
@@ -364,13 +376,13 @@ class Worker:
 
     def dispatch(self, operation: str, args: dict[str, Any]) -> dict[str, Any]:
         operations = {"get_device_info": self.get_device_info, "list_directory": self.list_directory,
-                      "read_file": self.read_file, "git_status": self.git_status, "git_diff": self.git_diff, "git_log": self.git_log,
+                      "read_file": self.read_file, "git_status": self.git_status, "git_branches": self.git_branches, "git_diff": self.git_diff, "git_log": self.git_log,
                       "file_sha256": self.file_sha256, "write_file": self.write_file,
                       "edit_file": self.edit_file, "search_files": self.search_files,
                       "create_directory": self.create_directory, "move_file": self.move_file,
                       "delete_file": self.delete_file, "move_directory": self.move_directory,
                       "delete_directory": self.delete_directory,
-                      "git_stage": self.git_stage, "git_commit": self.git_commit,
+                      "git_stage": self.git_stage, "git_unstage": self.git_unstage, "git_commit": self.git_commit,
                       "git_branch_create": self.git_branch_create,
                       "git_branch_switch": self.git_branch_switch, "git_push": self.git_push,
                       "check_syntax": self.check_syntax,

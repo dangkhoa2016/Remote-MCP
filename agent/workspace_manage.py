@@ -251,3 +251,106 @@ class WorkspaceManager(WorkspaceEditor):
             os.close(fd)
         return {"query": query, "path": path, "mode": mode, "matches": results,
                 "files_scanned": scanned, "truncated": truncated}
+
+    def move_directory(self, source: str, destination: str) -> dict[str, Any]:
+        source_parts = self._directory_parts(source)
+        dest_parts = self._directory_parts(destination)
+        if source_parts == dest_parts or dest_parts[:len(source_parts)] == source_parts:
+            raise WorkspaceEditError("Cannot move directory into itself")
+        source_parent = self._parent_fd(source_parts)
+        try:
+            destination_parent = self._parent_fd(dest_parts)
+            try:
+                source_fd = os.open(source_parts[-1], DIR_FLAGS, dir_fd=source_parent)
+                os.close(source_fd)
+                try:
+                    os.stat(dest_parts[-1], dir_fd=destination_parent, follow_symlinks=False)
+                except FileNotFoundError:
+                    pass
+                else:
+                    raise WorkspaceEditError("Destination already exists")
+                os.rename(source_parts[-1], dest_parts[-1],
+                          src_dir_fd=source_parent, dst_dir_fd=destination_parent)
+                os.fsync(source_parent)
+                os.fsync(destination_parent)
+            finally:
+                os.close(destination_parent)
+        except OSError as exc:
+            raise WorkspaceEditError("Directory move unavailable") from exc
+        finally:
+            os.close(source_parent)
+        return {"source": source, "destination": destination, "moved": True}
+
+    def delete_directory(self, path: str, recursive: bool = False,
+                         max_entries: int = 1000) -> dict[str, Any]:
+        parts = self._directory_parts(path)
+        if type(recursive) is not bool or type(max_entries) is not int or not 1 <= max_entries <= 1000:
+            raise WorkspaceEditError("Invalid deletion options")
+        parent = self._parent_fd(parts)
+        deleted = 0
+        try:
+            fd = os.open(parts[-1], DIR_FLAGS, dir_fd=parent)
+            try:
+                if not recursive:
+                    if os.listdir(fd):
+                        raise WorkspaceEditError("Directory is not empty; set recursive=true")
+                    os.rmdir(parts[-1], dir_fd=parent)
+                    os.fsync(parent)
+                    return {"path": path, "deleted": True, "entries_deleted": 0}
+
+                # First inspect entire tree to avoid partial deletions on known
+                # unsupported entries; no symlink, secret-like names or .git.
+                all_entries: list[tuple[tuple[str, ...], bool]] = []
+
+                def collect(directory: int, prefix: tuple[str, ...], depth: int) -> None:
+                    if depth > 16:
+                        raise WorkspaceEditError("Directory depth limit exceeded")
+                    for name in sorted(os.listdir(directory)):
+                        rel = prefix + (name,)
+                        try:
+                            self.validate_path(str(Path(*rel)))
+                        except Exception as exc:
+                            raise WorkspaceEditError("Directory contains a restricted entry") from exc
+                        meta = os.stat(name, dir_fd=directory, follow_symlinks=False)
+                        is_dir = stat.S_ISDIR(meta.st_mode)
+                        if not is_dir and not stat.S_ISREG(meta.st_mode):
+                            raise WorkspaceEditError("Directory contains a non-regular entry")
+                        all_entries.append((rel, is_dir))
+                        if len(all_entries) > max_entries:
+                            raise WorkspaceEditError("Directory entry limit exceeded")
+                        if is_dir:
+                            child = os.open(name, DIR_FLAGS, dir_fd=directory)
+                            try:
+                                collect(child, rel, depth + 1)
+                            finally:
+                                os.close(child)
+
+                collect(fd, parts, 0)
+
+                def remove(directory: int, prefix: tuple[str, ...]) -> None:
+                    nonlocal deleted
+                    for name in sorted(os.listdir(directory)):
+                        meta = os.stat(name, dir_fd=directory, follow_symlinks=False)
+                        if stat.S_ISDIR(meta.st_mode):
+                            child = os.open(name, DIR_FLAGS, dir_fd=directory)
+                            try:
+                                remove(child, prefix + (name,))
+                            finally:
+                                os.close(child)
+                            os.rmdir(name, dir_fd=directory)
+                        elif stat.S_ISREG(meta.st_mode):
+                            os.unlink(name, dir_fd=directory)
+                        else:
+                            raise WorkspaceEditError("Directory changed during delete")
+                        deleted += 1
+
+                remove(fd, parts)
+                os.rmdir(parts[-1], dir_fd=parent)
+                os.fsync(parent)
+            finally:
+                os.close(fd)
+        except OSError as exc:
+            raise WorkspaceEditError("Directory deletion unavailable; verify remaining entries") from exc
+        finally:
+            os.close(parent)
+        return {"path": path, "deleted": True, "entries_deleted": deleted}

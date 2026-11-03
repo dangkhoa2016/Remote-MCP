@@ -18,6 +18,8 @@ class WorkspaceRouter:
                  *, commands_enabled: bool = False, tests_enabled: bool = False,
                  write_enabled: bool = False, checks_enabled: bool = False,
                  git_write_enabled: bool = False, git_push_enabled: bool = False):
+        if extra_roots is None:
+            extra_roots = {}
         if not isinstance(extra_roots, dict) or len(extra_roots) > MAX_WORKSPACES - 1:
             raise ValueError("Invalid KRW_WORKSPACES_JSON mapping")
         roots = {"default": default_root}

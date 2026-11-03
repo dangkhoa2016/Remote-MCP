@@ -8,7 +8,7 @@ Phase 6 expands the outbound-only Agent without enabling arbitrary remote shell 
 - Existing file, directory and Git read actions accept optional `workspace_id` (defaults to `default`, preserving Phase 5 behavior).
 - `move_directory` renames a directory within the selected workspace, with no intentional destination overwrite.
 - `delete_directory` removes an empty directory; `recursive=true` is explicit for non-empty directories (up to 1,000 entries, 16 levels). The operation refuses symlinks, secret-like names and Git metadata. A concurrent filesystem change may result in partial deletion.
-- `git_stage` stages one file at a time; `git_commit` requires a message and author identity; `git_branch_create` and `git_branch_switch` manage local branches. Hooks and signing are disabled for the managed Git commands.
+- `git_branches` lists local branches and the current branch (read-only). `git_stage` and `git_unstage` manage the index one file at a time. `git_commit` requires a message and author identity; `git_branch_create` and `git_branch_switch` manage local branches. Hooks and signing are disabled for the managed Git commands.
 - `git_push` pushes only the currently checked-out branch to a credential-free HTTPS `github.com` origin, without force. Push requires additional opt-in and a GitHub token stored only on the Agent, outside the authorized workspace.
 
 ## Configure additional workspaces (Agent)

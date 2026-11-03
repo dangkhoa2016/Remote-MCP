@@ -2,7 +2,7 @@
 
 Dự án MCP Gateway bảo vệ bằng OAuth, triển khai trên Render và kết nối Agent qua HTTPS theo chiều đi ra. Gateway chỉ mở cổng HTTPS cho OAuth và MCP; MCP backend và Agent Relay chỉ nghe localhost trong container Render.
 
-**Production hiện tại:** Phase 4-B (v0.4.0), chỉ đọc. **Đang đề xuất:** Phase 4-C (v0.5.0), ghi file có giới hạn và kiểm tra cú pháp *không chạy mã dự án*. Chưa bật Phase 4-C cho tới khi toàn bộ regression tests PASS.
+**Source phát hành:** Phase 4-C (v0.5.0) bổ sung ghi file có giới hạn và kiểm tra cú pháp *không chạy mã dự án*. Toàn bộ quyền mới mặc định TẮT; Gateway v0.4.0 trước đó vẫn chỉ đọc cho tới khi Render triển khai bản mới. Xác minh phiên bản thực tế qua `health_check`.
 
 ## Kết nối Agent (Linux / Google Colab)
 
@@ -27,7 +27,7 @@ Cần cung cấp Device ID/token đã đăng ký và một thư mục workspace 
 
 - Xem thông tin thiết bị, liệt kê thư mục và đọc file UTF-8 trong workspace được cấp quyền.
 - Đọc Git status, diff từng file và lịch sử commit trong Git repository thật nằm bên trong workspace.
-- Phase 4-C đề xuất ba công cụ `file_sha256`, `write_file`, `check_syntax` (Python, JSON, TOML) với giới hạn rõ ràng.
+- Phase 4-C có ba công cụ (phải bật quyền) `file_sha256`, `write_file`, `check_syntax` (Python, JSON, TOML) với giới hạn rõ ràng.
 - `execute_command` vẫn bị khóa; không cung cấp shell tùy ý, `pytest`, xóa file, Git write hoặc thực thi mã dự án.
 
 Muốn bật Phase 4-C phải cấu hình quyền **cả ở Render và Agent**. Đọc [thiết kế bảo mật Phase 4-C](docs/PHASE4C_VI.md) trước khi bật. Mặc định không cho phép ghi.

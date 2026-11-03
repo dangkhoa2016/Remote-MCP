@@ -2,7 +2,7 @@
 
 A private OAuth-protected MCP Gateway hosted on Render, with outbound-only device Agents. The Gateway and OAuth frontend use public HTTPS; the MCP backend and Agent Relay remain bound to localhost inside the Render container.
 
-**Production:** Phase 4-B (v0.4.0), read-only access. **Proposed:** Phase 4-C (v0.5.0), opt-in text edits and *non-executing* syntax checks; do not enable until the PR regression suite passes.
+**Release source:** Phase 4-C (v0.5.0) adds opt-in text edits and *non-executing* syntax checks. All new permissions default to OFF; previously deployed Gateway v0.4.0 remains read-only until Render deploys this release. Verify the live version with `health_check`.
 
 ## Connect an Agent (Linux / Google Colab)
 
@@ -27,7 +27,7 @@ You must provide a registered device ID/token and an existing dedicated workspac
 
 - Read device information, list permitted workspace directories, and read UTF-8 source files.
 - Read-only Git status, per-file diff and commit log on a real in-workspace Git repository.
-- Phase 4-C proposal: bounded `file_sha256`, `write_file` and `check_syntax` for Python, JSON and TOML.
+- Phase 4-C (opt-in): bounded `file_sha256`, `write_file` and `check_syntax` for Python, JSON and TOML.
 - `execute_command` remains disabled; the gateway does **not** expose arbitrary shell, `pytest`, deletion, Git writes or execution of project code.
 
 Phase 4-C requires *both* Render and Agent opt-in flags. See [Phase 4-C security details](docs/PHASE4C_EN.md) before enabling. Writes are off by default.

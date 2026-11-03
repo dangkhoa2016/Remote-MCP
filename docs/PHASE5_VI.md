@@ -14,7 +14,7 @@ Các công cụ hiện có `write_file`, `read_file`, `file_sha256` và `check_s
 
 ## Giới hạn và cách hoạt động
 
-- `write_file`: tối đa 1 MiB văn bản UTF-8 mỗi lần (trước đây là 16 KiB).
+- `write_file`: tối đa 1 MiB văn bản UTF-8 mỗi lần (trước đây là 16 KiB). Với file đã có, dùng `overwrite=true` để ghi đè không cần tự lấy hash hoặc truyền `expected_sha256` nếu muốn kiểm tra xung đột.
 - `read_file`: tối đa 256 KiB mỗi lần (mặc định vẫn là 8 KiB).
 - SHA-256 file hiện có: tối đa 2 MiB. Kiểm tra cú pháp: tối đa 1 MiB.
 - `search_files`: tối đa 100 kết quả, quét 2.000 file và 8 cấp thư mục trong mỗi lần gọi.

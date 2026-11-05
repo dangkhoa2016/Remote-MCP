@@ -15,6 +15,7 @@ from agent.git_write import GitWrite
 from agent.workspace_edit import WorkspaceEditor, WorkspaceEditError
 from agent.workspace_manage import WorkspaceManager
 from agent.task_runner import TaskRunner, TaskError
+from agent.long_tasks import LongTaskManager
 
 MAX_FILE_BYTES = 262_144
 MAX_DIRECTORY_ENTRIES = 150
@@ -46,7 +47,9 @@ class Worker:
     def __init__(self, root: Path, commands_enabled: bool = False, tests_enabled: bool = False,
                  write_enabled: bool = False, checks_enabled: bool = False,
                  git_write_enabled: bool = False, git_push_enabled: bool = False,
-                 tasks_enabled: bool = False, test_tasks_enabled: bool = False):
+                 tasks_enabled: bool = False, test_tasks_enabled: bool = False,
+                 long_tasks_enabled: bool = False,
+                 long_task_manager: LongTaskManager | None = None):
         self.root = root.resolve(strict=True)
         if not self.root.is_dir():
             raise ValueError("Workspace root must be a directory")
@@ -60,6 +63,8 @@ class Worker:
         self.git_push_enabled = git_push_enabled
         self.tasks_enabled = tasks_enabled
         self.test_tasks_enabled = test_tasks_enabled
+        self.long_tasks_enabled = long_tasks_enabled
+        self.long_task_manager = long_task_manager if long_task_manager is not None else LongTaskManager()
 
     def path(self, requested: str) -> Path:
         if not isinstance(requested, str) or len(requested) > 400 or "\x00" in requested:
@@ -369,6 +374,46 @@ class Worker:
         except TaskError as exc:
             raise WorkspaceError(str(exc)) from exc
 
+    def _ensure_long_tasks(self) -> None:
+        if not (self.tasks_enabled and self.test_tasks_enabled and self.long_tasks_enabled):
+            raise WorkspaceError("Long-running tasks disabled on Agent")
+
+    def start_long_task(self, args: dict[str, Any]) -> dict[str, Any]:
+        self._ensure_long_tasks()
+        try:
+            return self.long_task_manager.start(
+                self._task_runner(),
+                workspace_id=args.get("workspace_id", "default"),
+                task_id=args.get("task_id"), target=args.get("target", ""),
+            )
+        except TaskError as exc:
+            raise WorkspaceError(str(exc)) from exc
+
+    def get_long_task(self, args: dict[str, Any]) -> dict[str, Any]:
+        self._ensure_long_tasks()
+        try:
+            return self.long_task_manager.status(
+                args.get("job_id"), workspace_id=args.get("workspace_id", "default"))
+        except TaskError as exc:
+            raise WorkspaceError(str(exc)) from exc
+
+    def read_long_task_log(self, args: dict[str, Any]) -> dict[str, Any]:
+        self._ensure_long_tasks()
+        try:
+            return self.long_task_manager.log(
+                args.get("job_id"), workspace_id=args.get("workspace_id", "default"),
+                offset=args.get("offset", 0), max_bytes=args.get("max_bytes", 4096))
+        except TaskError as exc:
+            raise WorkspaceError(str(exc)) from exc
+
+    def cancel_long_task(self, args: dict[str, Any]) -> dict[str, Any]:
+        self._ensure_long_tasks()
+        try:
+            return self.long_task_manager.cancel(
+                args.get("job_id"), workspace_id=args.get("workspace_id", "default"))
+        except TaskError as exc:
+            raise WorkspaceError(str(exc)) from exc
+
     def execute_command(self, args: dict[str, Any]) -> dict[str, Any]:
         if not self.commands_enabled:
             raise WorkspaceError("Command execution disabled on agent")
@@ -404,7 +449,11 @@ class Worker:
                       "git_branch_switch": self.git_branch_switch, "git_push": self.git_push,
                       "check_syntax": self.check_syntax,
                       "execute_command": self.execute_command, "list_tasks": self.list_tasks,
-                      "run_task": self.run_task}
+                      "run_task": self.run_task,
+                      "start_long_task": self.start_long_task,
+                      "get_long_task": self.get_long_task,
+                      "read_long_task_log": self.read_long_task_log,
+                      "cancel_long_task": self.cancel_long_task}
         if operation not in operations:
             raise WorkspaceError("Unsupported operation")
         return operations[operation](args)

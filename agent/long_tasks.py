@@ -10,7 +10,6 @@ from dataclasses import dataclass, field
 import os
 from pathlib import Path
 import re
-import resource
 import secrets
 import selectors
 import signal
@@ -39,6 +38,7 @@ class _Job:
     target: str
     root: Path
     argv: list[str]
+    runner: TaskRunner = field(repr=False)
     state: str = "queued"
     created_at: float = field(default_factory=time.time)
     started_at: float | None = None
@@ -111,7 +111,7 @@ class LongTaskManager:
             if len(self._queue) >= MAX_QUEUED:
                 raise TaskError("Task queue is full")
             job_id = secrets.token_hex(16)
-            job = _Job(job_id, workspace_id, task_id, target, runner.root, argv)
+            job = _Job(job_id, workspace_id, task_id, target, runner.root, argv, runner)
             self._jobs[job_id] = job
             self._queue.append(job_id)
             if not self._active:
@@ -155,6 +155,10 @@ class LongTaskManager:
                 job.cancel_requested = True
                 job.state = "cancelled"
                 job.finished_at = time.time()
+                try:
+                    self._queue.remove(job_id)
+                except ValueError:
+                    pass
             elif job.state == "running":
                 job.cancel_requested = True
                 if job.process is not None:
@@ -183,6 +187,9 @@ class LongTaskManager:
         output_limit = False
         result_code: int | None = None
         try:
+            # A queued target may be removed or replaced before it starts.
+            # Recheck the file, symlinks and allowed path immediately pre-launch.
+            job.runner._target(job.task_id, job.target)
             with tempfile.TemporaryDirectory(prefix="krw-long-task-") as temporary:
                 # start_new_session allows cancellation of the entire process group.
                 process = subprocess.Popen(
@@ -232,7 +239,7 @@ class LongTaskManager:
                     selector.close()
                     if process.stdout is not None:
                         process.stdout.close()
-        except (OSError, ValueError, subprocess.SubprocessError):
+        except (OSError, ValueError, subprocess.SubprocessError, TaskError):
             # Do not leak command errors containing environment or filesystem data.
             result_code = -1
         finally:
@@ -273,7 +280,15 @@ class LongTaskManager:
                     self._active = False
                     self._thread = None
                     return
-            self._execute(job)
+            try:
+                self._execute(job)
+            except Exception:
+                # Fail this job instead of leaving the queue permanently active.
+                with self._lock:
+                    job.process = None
+                    job.exit_code = -1
+                    job.finished_at = time.time()
+                    job.state = "cancelled" if job.cancel_requested else "failed"
 
     def shutdown(self) -> None:
         with self._lock:

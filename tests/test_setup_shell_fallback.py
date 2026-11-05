@@ -20,6 +20,7 @@ def _bundle(tmp_path: Path) -> Path:
     with tarfile.open(bundle, 'w:gz') as tar:
         for name in ('agent/__init__.py', 'agent/agent.py', 'agent/worker.py',
                      'agent/git_readonly.py', 'agent/git_write.py', 'agent/workspace_routes.py',
+                     'agent/task_runner.py',
                      'agent/workspace_edit.py',
                      'agent/workspace_manage.py', 'agent-requirements.txt'):
             raw = b'httpx>=0.27,<1\n' if name.endswith('requirements.txt') else b'# test\n'

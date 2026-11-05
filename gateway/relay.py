@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 
 LOG = logging.getLogger("krw.gateway")
 DEVICE_ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
-VALID_OPERATIONS = {"get_device_info", "list_directory", "read_file", "git_status", "git_diff", "git_log", "file_sha256", "write_file", "check_syntax", "execute_command", "edit_file", "search_files", "create_directory", "move_file", "delete_file", "list_workspaces", "move_directory", "delete_directory", "git_stage", "git_commit", "git_branch_create", "git_branch_switch", "git_push", "git_branches", "git_unstage"}
+VALID_OPERATIONS = {"get_device_info", "list_directory", "read_file", "git_status", "git_diff", "git_log", "file_sha256", "write_file", "check_syntax", "execute_command", "edit_file", "search_files", "create_directory", "move_file", "delete_file", "list_workspaces", "move_directory", "delete_directory", "git_stage", "git_commit", "git_branch_create", "git_branch_switch", "git_push", "git_branches", "git_unstage", "list_tasks", "run_task"}
 
 
 class Registration(BaseModel):
@@ -41,7 +41,7 @@ class Result(BaseModel):
 
 class Dispatch(BaseModel):
     device_id: str
-    operation: Literal["get_device_info", "list_directory", "read_file", "git_status", "git_diff", "git_log", "file_sha256", "write_file", "check_syntax", "execute_command", "edit_file", "search_files", "create_directory", "move_file", "delete_file", "list_workspaces", "move_directory", "delete_directory", "git_stage", "git_commit", "git_branch_create", "git_branch_switch", "git_push", "git_branches", "git_unstage"]
+    operation: Literal["get_device_info", "list_directory", "read_file", "git_status", "git_diff", "git_log", "file_sha256", "write_file", "check_syntax", "execute_command", "edit_file", "search_files", "create_directory", "move_file", "delete_file", "list_workspaces", "move_directory", "delete_directory", "git_stage", "git_commit", "git_branch_create", "git_branch_switch", "git_push", "git_branches", "git_unstage", "list_tasks", "run_task"]
     arguments: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -55,7 +55,8 @@ class Device:
 class State:
     def __init__(self, device_tokens: dict[str, str], control_token: str, commands_enabled: bool = False,
                  writes_enabled: bool = False, checks_enabled: bool = False,
-                 git_writes_enabled: bool = False, git_push_enabled: bool = False):
+                 git_writes_enabled: bool = False, git_push_enabled: bool = False,
+                 tasks_enabled: bool = False, test_tasks_enabled: bool = False):
         if not device_tokens or any(not DEVICE_ID_RE.fullmatch(k) or len(v) < 32 for k, v in device_tokens.items()):
             raise ValueError("Configure one or more device IDs and >=32-character tokens")
         if len(control_token) < 32:
@@ -67,6 +68,8 @@ class State:
         self.checks_enabled = checks_enabled
         self.git_writes_enabled = git_writes_enabled
         self.git_push_enabled = git_push_enabled
+        self.tasks_enabled = tasks_enabled
+        self.test_tasks_enabled = test_tasks_enabled
         self.devices: dict[str, Device] = {}
         self.pending: dict[str, tuple[str, asyncio.Future]] = {}
         self.lock = asyncio.Lock()
@@ -130,6 +133,11 @@ class State:
             raise HTTPException(403, "Git writes disabled on gateway")
         if req.operation == "git_push" and not self.git_push_enabled:
             raise HTTPException(403, "Git push disabled on gateway")
+        if req.operation == "run_task":
+            if not self.tasks_enabled:
+                raise HTTPException(403, "Controlled tasks disabled on gateway")
+            if req.arguments.get("task_id") in {"pytest", "rspec", "rails_test"} and not self.test_tasks_enabled:
+                raise HTTPException(403, "Test tasks disabled on gateway")
         if req.operation == "check_syntax" and not self.checks_enabled:
             raise HTTPException(403, "Static checks disabled on gateway")
         async with self.lock:
@@ -178,7 +186,9 @@ def state_from_env() -> State:
                  writes_enabled=os.getenv("KRW_WRITE_ENABLED", "0") == "1",
                  checks_enabled=os.getenv("KRW_STATIC_CHECKS_ENABLED", "0") == "1",
                  git_writes_enabled=os.getenv("KRW_GIT_WRITES_ENABLED", "0") == "1",
-                 git_push_enabled=os.getenv("KRW_GIT_PUSH_ENABLED", "0") == "1")
+                 git_push_enabled=os.getenv("KRW_GIT_PUSH_ENABLED", "0") == "1",
+                 tasks_enabled=os.getenv("KRW_TASKS_ENABLED", "0") == "1",
+                 test_tasks_enabled=os.getenv("KRW_TEST_TASKS_ENABLED", "0") == "1")
 
 
 def create_app(state: State) -> FastAPI:
@@ -211,10 +221,12 @@ def create_app(state: State) -> FastAPI:
     async def capabilities(x_control_token: str | None = Header(default=None)):
         state.check_control(x_control_token)
         return {"mode": "device-relay", "device_agent_connected": any(state.online(d) for d in state.devices.values()),
-                "available_tools": ["health_check", "list_capabilities", "list_devices", "get_device_info", "list_directory", "read_file", "git_status", "git_diff", "git_log", "file_sha256", "write_file", "check_syntax", "execute_command", "edit_file", "search_files", "create_directory", "move_file", "delete_file", "list_workspaces", "move_directory", "delete_directory", "git_stage", "git_commit", "git_branch_create", "git_branch_switch", "git_push", "git_branches", "git_unstage"],
+                "available_tools": ["health_check", "list_capabilities", "list_devices", "get_device_info", "list_directory", "read_file", "git_status", "git_diff", "git_log", "file_sha256", "write_file", "check_syntax", "execute_command", "edit_file", "search_files", "create_directory", "move_file", "delete_file", "list_workspaces", "move_directory", "delete_directory", "git_stage", "git_commit", "git_branch_create", "git_branch_switch", "git_push", "git_branches", "git_unstage", "list_tasks", "run_task"],
                 "filesystem_access": True, "command_execution": state.commands_enabled,
                 "filesystem_writes": state.writes_enabled, "static_checks": state.checks_enabled,
-                "git_writes": state.git_writes_enabled, "git_push": state.git_push_enabled}
+                "git_writes": state.git_writes_enabled, "git_push": state.git_push_enabled,
+                "controlled_tasks": state.tasks_enabled,
+                "test_tasks": state.tasks_enabled and state.test_tasks_enabled}
 
     @app.get("/v1/control/devices")
     async def list_devices(x_control_token: str | None = Header(default=None)):

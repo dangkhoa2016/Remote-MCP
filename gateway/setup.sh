@@ -35,6 +35,8 @@ OVERRIDE_CHECKS="${KRW_ALLOW_STATIC_CHECKS:-}"
 OVERRIDE_WORKSPACES="${KRW_WORKSPACES_JSON:-}"
 OVERRIDE_GIT_WRITES="${KRW_ALLOW_GIT_WRITES:-}"
 OVERRIDE_GIT_PUSH="${KRW_ALLOW_GIT_PUSH:-}"
+OVERRIDE_TASKS="${KRW_ALLOW_TASKS:-}"
+OVERRIDE_TEST_TASKS="${KRW_ALLOW_TEST_TASKS:-}"
 OVERRIDE_GIT_TOKEN="${KRW_GIT_PUSH_TOKEN:-}"
 if [[ -f "$CONFIG_FILE" ]]; then
   [[ -O "$CONFIG_FILE" && ! -L "$CONFIG_FILE" ]]     || fail 'Existing Agent configuration is not an owner-owned regular file'
@@ -52,15 +54,19 @@ fi
 [[ -n "$OVERRIDE_WORKSPACES" ]] && KRW_WORKSPACES_JSON="$OVERRIDE_WORKSPACES"
 [[ -n "$OVERRIDE_GIT_WRITES" ]] && KRW_ALLOW_GIT_WRITES="$OVERRIDE_GIT_WRITES"
 [[ -n "$OVERRIDE_GIT_PUSH" ]] && KRW_ALLOW_GIT_PUSH="$OVERRIDE_GIT_PUSH"
+[[ -n "$OVERRIDE_TASKS" ]] && KRW_ALLOW_TASKS="$OVERRIDE_TASKS"
+[[ -n "$OVERRIDE_TEST_TASKS" ]] && KRW_ALLOW_TEST_TASKS="$OVERRIDE_TEST_TASKS"
 [[ -n "$OVERRIDE_GIT_TOKEN" ]] && KRW_GIT_PUSH_TOKEN="$OVERRIDE_GIT_TOKEN"
 ALLOW_WRITES="${KRW_ALLOW_FILE_WRITES:-0}"
 ALLOW_CHECKS="${KRW_ALLOW_STATIC_CHECKS:-0}"
 ALLOW_GIT_WRITES="${KRW_ALLOW_GIT_WRITES:-0}"
 ALLOW_GIT_PUSH="${KRW_ALLOW_GIT_PUSH:-0}"
+ALLOW_TASKS="${KRW_ALLOW_TASKS:-0}"
+ALLOW_TEST_TASKS="${KRW_ALLOW_TEST_TASKS:-0}"
 WORKSPACES_JSON="${KRW_WORKSPACES_JSON:-}"
 [[ -n "$WORKSPACES_JSON" ]] || WORKSPACES_JSON="{}"
 GIT_PUSH_TOKEN="${KRW_GIT_PUSH_TOKEN:-}"
-[[ "$ALLOW_WRITES" =~ ^[01]$ && "$ALLOW_CHECKS" =~ ^[01]$ && "$ALLOW_GIT_WRITES" =~ ^[01]$ && "$ALLOW_GIT_PUSH" =~ ^[01]$ ]]   || fail 'Agent permission flags must be 0 or 1'
+[[ "$ALLOW_WRITES" =~ ^[01]$ && "$ALLOW_CHECKS" =~ ^[01]$ && "$ALLOW_GIT_WRITES" =~ ^[01]$ && "$ALLOW_GIT_PUSH" =~ ^[01]$ && "$ALLOW_TASKS" =~ ^[01]$ && "$ALLOW_TEST_TASKS" =~ ^[01]$ ]]   || fail 'Agent permission flags must be 0 or 1'
 
 DEVICE_ID="${KRW_DEVICE_ID:-}"
 if [[ -z "$DEVICE_ID" ]]; then
@@ -112,7 +118,7 @@ printf '%s  %s\n' "$EXPECTED_SHA256" "$ARCHIVE" | sha256sum -c - >/dev/null \
 
 while IFS= read -r item; do
   case "$item" in
-    agent/__init__.py|agent/agent.py|agent/worker.py|agent/git_readonly.py|agent/git_write.py|agent/workspace_routes.py|agent/workspace_edit.py|agent/workspace_manage.py|agent-requirements.txt) ;;
+    agent/__init__.py|agent/agent.py|agent/worker.py|agent/git_readonly.py|agent/git_write.py|agent/workspace_routes.py|agent/task_runner.py|agent/workspace_edit.py|agent/workspace_manage.py|agent-requirements.txt) ;;
     *) fail 'Unexpected file in Agent bundle' ;;
   esac
 done < <(tar -tzf "$ARCHIVE")
@@ -162,6 +168,8 @@ CONFIG_FILE="$CONFIG_DIR/agent.env"
   printf 'KRW_WORKSPACES_JSON=%q\n' "$WORKSPACES_JSON"
   printf 'KRW_ALLOW_GIT_WRITES=%s\n' "$ALLOW_GIT_WRITES"
   printf 'KRW_ALLOW_GIT_PUSH=%s\n' "$ALLOW_GIT_PUSH"
+  printf 'KRW_ALLOW_TASKS=%s\n' "$ALLOW_TASKS"
+  printf 'KRW_ALLOW_TEST_TASKS=%s\n' "$ALLOW_TEST_TASKS"
   if [[ -n "$GIT_PUSH_TOKEN" ]]; then
     printf 'KRW_GIT_PUSH_TOKEN=%q\n' "$GIT_PUSH_TOKEN"
   fi

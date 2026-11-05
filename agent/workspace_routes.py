@@ -17,7 +17,8 @@ class WorkspaceRouter:
     def __init__(self, default_root: Path, extra_roots: dict[str, str] | None = None,
                  *, commands_enabled: bool = False, tests_enabled: bool = False,
                  write_enabled: bool = False, checks_enabled: bool = False,
-                 git_write_enabled: bool = False, git_push_enabled: bool = False):
+                 git_write_enabled: bool = False, git_push_enabled: bool = False,
+                 tasks_enabled: bool = False, test_tasks_enabled: bool = False):
         if extra_roots is None:
             extra_roots = {}
         if not isinstance(extra_roots, dict) or len(extra_roots) > MAX_WORKSPACES - 1:
@@ -36,6 +37,7 @@ class WorkspaceRouter:
                 path, commands_enabled=commands_enabled, tests_enabled=tests_enabled,
                 write_enabled=write_enabled, checks_enabled=checks_enabled,
                 git_write_enabled=git_write_enabled, git_push_enabled=git_push_enabled,
+                tasks_enabled=tasks_enabled, test_tasks_enabled=test_tasks_enabled,
             )
             # Prevent aliases and nested roots from creating an implicit path
             # between two otherwise independently authorized workspaces.
@@ -62,6 +64,8 @@ class WorkspaceRouter:
             checks_enabled=os.getenv("KRW_ALLOW_STATIC_CHECKS", "0") == "1",
             git_write_enabled=os.getenv("KRW_ALLOW_GIT_WRITES", "0") == "1",
             git_push_enabled=os.getenv("KRW_ALLOW_GIT_PUSH", "0") == "1",
+            tasks_enabled=os.getenv("KRW_ALLOW_TASKS", "0") == "1",
+            test_tasks_enabled=os.getenv("KRW_ALLOW_TEST_TASKS", "0") == "1",
         )
 
     def list_workspaces(self) -> dict[str, Any]:

@@ -2,7 +2,7 @@
 
 Dự án MCP Gateway bảo vệ bằng OAuth, triển khai trên Render và kết nối Agent qua HTTPS theo chiều đi ra. Gateway chỉ mở cổng HTTPS cho OAuth và MCP; MCP backend và Agent Relay chỉ nghe localhost trong container Render.
 
-**Bản phát triển:** Phase 6.1 (v0.7.1) cải tiến chuyển nhánh Git an toàn khi có file untracked không xung đột và yêu cầu các workspace có tên không được lồng nhau hay trùng đường dẫn thực. Cần deploy Gateway và cập nhật Agent để dùng các thay đổi này; kiểm tra bằng `health_check`.
+**Bản phát triển:** Phase 7 (v0.8.0) bổ sung runner thực thi tác vụ cố định cho các lệnh Git chỉ đọc, pytest, RSpec và Rails test. Cần deploy Gateway và cập nhật Agent; kiểm tra phiên bản thực tế bằng `health_check`.
 
 ## Kết nối Agent (Linux / Google Colab)
 
@@ -31,9 +31,10 @@ Cần cung cấp Device ID/token đã đăng ký và một thư mục workspace 
 - Phase 5 bổ sung `edit_file`, `search_files`, `create_directory`, `move_file`, `delete_file`; đọc tối đa 256 KiB mỗi lần, hỗ trợ dotfile thông thường và file nguồn UTF-8 không có phần mở rộng.
 - Phase 6 bổ sung `list_workspaces` và tham số `workspace_id` tùy chọn, `move_directory`, `delete_directory`, `git_branches`, `git_stage`, `git_unstage`, `git_commit`, `git_branch_create`, `git_branch_switch`, `git_push`.
 - Phase 6.1 cho phép chuyển nhánh khi file untracked không xung đột, vẫn bảo vệ thay đổi tracked/staged; từ chối cấu hình nhiều workspace có thư mục gốc trùng hoặc lồng nhau.
-- `execute_command` vẫn bị khóa. Quyền Git write và Git push mặc định TẮT, bật độc lập; không hỗ trợ arbitrary shell hoặc force push.
+- Phase 7 bổ sung `list_tasks` và `run_task` với các ID cố định `git_status`, `git_log`, `pytest`, `rspec`, `rails_test` trong workspace được chọn, cho phép chỉ định file test hợp lệ.
+- `execute_command` cũ vẫn bị khóa. Git write, Git push và chạy test có quyền bật riêng. Không hỗ trợ shell tùy ý hoặc force push. **Test task thực thi mã dự án và không phải sandbox cấp OS**.
 
-Muốn ghi file/thư mục cần bật quyền **cả trên Render và Agent** (`KRW_WRITE_ENABLED=1`, `KRW_ALLOW_FILE_WRITES=1`). Git write có quyền độc lập (`KRW_GIT_WRITES_ENABLED=1`, `KRW_ALLOW_GIT_WRITES=1`); push cần bật thêm quyền và token tại Agent. Xem [Phase 6](docs/PHASE6_VI.md) để biết cấu hình chi tiết.
+Muốn ghi file/thư mục cần bật quyền **cả trên Render và Agent** (`KRW_WRITE_ENABLED=1`, `KRW_ALLOW_FILE_WRITES=1`). Git write có quyền độc lập (`KRW_GIT_WRITES_ENABLED=1`, `KRW_ALLOW_GIT_WRITES=1`); push cần bật thêm quyền và token tại Agent. Runner có quyền riêng: `KRW_TASKS_ENABLED` / `KRW_TEST_TASKS_ENABLED` (Render), `KRW_ALLOW_TASKS` / `KRW_ALLOW_TEST_TASKS` (Agent). Xem [Phase 7](docs/PHASE7_VI.md) về cách cài và những giới hạn quan trọng.
 
 ## Triển khai và kiểm chứng
 
@@ -46,4 +47,4 @@ python3 -m compileall -q agent gateway
 bash -n gateway/setup.sh
 ```
 
-Tài liệu: [triển khai](DEPLOY_VI.md), [cài Agent](docs/AGENT_BOOTSTRAP_VI.md), [Phase 4-C](docs/PHASE4C_VI.md), [Phase 5](docs/PHASE5_VI.md), [Phase 6](docs/PHASE6_VI.md). Tài liệu Northflank cũ được giữ lại để tham khảo lịch sử; hiện tại hệ thống chạy trên Render.
+Tài liệu: [triển khai](DEPLOY_VI.md), [cài Agent](docs/AGENT_BOOTSTRAP_VI.md), [Phase 4-C](docs/PHASE4C_VI.md), [Phase 5](docs/PHASE5_VI.md), [Phase 6](docs/PHASE6_VI.md), [Phase 7](docs/PHASE7_VI.md). Tài liệu Northflank cũ được giữ lại để tham khảo lịch sử; hiện tại hệ thống chạy trên Render.

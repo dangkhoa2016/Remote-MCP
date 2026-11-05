@@ -20,6 +20,7 @@ def _bundle(tmp_path: Path) -> Path:
     with tarfile.open(bundle, 'w:gz') as tar:
         for name in ('agent/__init__.py', 'agent/agent.py', 'agent/worker.py',
                      'agent/git_readonly.py', 'agent/git_write.py', 'agent/workspace_routes.py',
+                     'agent/task_runner.py',
                      'agent/workspace_edit.py',
                      'agent/workspace_manage.py', 'agent-requirements.txt'):
             raw = b'httpx>=0.27,<1\n' if name.endswith('requirements.txt') else b'# test\n'
@@ -99,12 +100,17 @@ exit 11
     # Upgrade without passing the token/device again, retaining opt-in flags.
     config_file = config / 'agent.env'
     existing = config_file.read_text(encoding='utf-8')
-    config_file.write_text(existing.replace('KRW_ALLOW_FILE_WRITES=0',
-                                            'KRW_ALLOW_FILE_WRITES=1').replace(
-        'KRW_ALLOW_STATIC_CHECKS=0', 'KRW_ALLOW_STATIC_CHECKS=1'), encoding='utf-8')
+    config_file.write_text(
+        existing.replace('KRW_ALLOW_FILE_WRITES=0', 'KRW_ALLOW_FILE_WRITES=1')
+        .replace('KRW_ALLOW_STATIC_CHECKS=0', 'KRW_ALLOW_STATIC_CHECKS=1')
+        .replace('KRW_ALLOW_TASKS=0', 'KRW_ALLOW_TASKS=1')
+        .replace('KRW_ALLOW_TEST_TASKS=0', 'KRW_ALLOW_TEST_TASKS=1'),
+        encoding='utf-8',
+    )
     upgrade_env = dict(env)
     for key in ('KRW_DEVICE_ID', 'KRW_WORKSPACE_ROOT', 'KRW_AGENT_TOKEN',
-                'KRW_ALLOW_FILE_WRITES', 'KRW_ALLOW_STATIC_CHECKS'):
+                'KRW_ALLOW_FILE_WRITES', 'KRW_ALLOW_STATIC_CHECKS',
+                'KRW_ALLOW_TASKS', 'KRW_ALLOW_TEST_TASKS'):
         upgrade_env.pop(key, None)
     upgraded = subprocess.run(['bash', str(installer)], env=upgrade_env,
                               capture_output=True, text=True, timeout=12)
@@ -114,6 +120,8 @@ exit 11
     assert 'KRW_DEVICE_ID=colab-test' in upgraded_config
     assert 'KRW_ALLOW_FILE_WRITES=1' in upgraded_config
     assert 'KRW_ALLOW_STATIC_CHECKS=1' in upgraded_config
+    assert 'KRW_ALLOW_TASKS=1' in upgraded_config
+    assert 'KRW_ALLOW_TEST_TASKS=1' in upgraded_config
     assert 'AGENT_STARTED device=colab-test commands=0' in log.read_text()
 
     if venv_mode == 'broken':

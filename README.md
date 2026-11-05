@@ -2,7 +2,7 @@
 
 A private OAuth-protected MCP Gateway hosted on Render, with outbound-only device Agents. The Gateway and OAuth frontend use public HTTPS; the MCP backend and Agent Relay remain bound to localhost inside the Render container.
 
-**Development release:** Phase 6.1 (v0.7.1) improves safe Git branch switching with nonconflicting untracked files and enforces disjoint named workspace roots. A Gateway deploy and Agent update are required before these changes are live; verify with `health_check`.
+**Development release:** Phase 7 (v0.8.0) adds an opt-in controlled task runner for read-only Git queries, pytest, RSpec and Rails tests. This requires a Gateway deploy and Agent update; verify the live version with `health_check`.
 
 ## Connect an Agent (Linux / Google Colab)
 
@@ -31,9 +31,10 @@ You must provide a registered device ID/token and an existing dedicated workspac
 - Phase 5: `edit_file`, `search_files`, `create_directory`, `move_file` and `delete_file`. Read up to 256 KiB per call; normal dotfiles and extensionless UTF-8 source files are supported.
 - Phase 6: `list_workspaces` and optional `workspace_id` on existing file/Git actions, `move_directory`, `delete_directory`, `git_branches`, `git_stage`, `git_unstage`, `git_commit`, `git_branch_create`, `git_branch_switch`, and `git_push`.
 - Phase 6.1: `git_branch_switch` preserves safe untracked files but refuses tracked/staged changes and untracked collisions; named workspace roots must not overlap or alias each other.
-- `execute_command` stays disabled. Git write and Git push are separately opt-in, disabled by default; arbitrary shell and force push are not exposed.
+- Phase 7: `list_tasks` and `run_task` support fixed IDs `git_status`, `git_log`, `pytest`, `rspec`, `rails_test` in a selected workspace with an optional validated test-file target.
+- Legacy `execute_command` stays disabled. Git write, Git push and test task execution have separate opt-in permissions. Arbitrary shell and force push are not exposed. Test tasks **execute project code and are not an OS sandbox**.
 
-File and directory writes require *both* Render and Agent flags (`KRW_WRITE_ENABLED=1` and `KRW_ALLOW_FILE_WRITES=1`). Git writes have separate flags (`KRW_GIT_WRITES_ENABLED=1`, `KRW_ALLOW_GIT_WRITES=1`), while push requires additional opt-in and an Agent-side token. Read [Phase 6](docs/PHASE6_EN.md) for setup and permission details.
+File and directory writes require *both* Render and Agent flags (`KRW_WRITE_ENABLED=1` and `KRW_ALLOW_FILE_WRITES=1`). Git writes have separate flags (`KRW_GIT_WRITES_ENABLED=1`, `KRW_ALLOW_GIT_WRITES=1`), while push requires additional opt-in and an Agent-side token. Task runner settings are separately configured using `KRW_TASKS_ENABLED` / `KRW_TEST_TASKS_ENABLED` (Render), and `KRW_ALLOW_TASKS` / `KRW_ALLOW_TEST_TASKS` (Agent). Read [Phase 7](docs/PHASE7_EN.md) for safe setup and limitations.
 
 ## Deployment & verification
 
@@ -46,4 +47,4 @@ python3 -m compileall -q agent gateway
 bash -n gateway/setup.sh
 ```
 
-Further details: [Deployment guide](DEPLOY_EN.md), [Agent bootstrap](docs/AGENT_BOOTSTRAP_EN.md), [Phase 4-C](docs/PHASE4C_EN.md), [Phase 5](docs/PHASE5_EN.md), [Phase 6](docs/PHASE6_EN.md). The original Northflank deployment guide is kept for historical context; the current service runs on Render.
+Further details: [Deployment guide](DEPLOY_EN.md), [Agent bootstrap](docs/AGENT_BOOTSTRAP_EN.md), [Phase 4-C](docs/PHASE4C_EN.md), [Phase 5](docs/PHASE5_EN.md), [Phase 6](docs/PHASE6_EN.md), [Phase 7](docs/PHASE7_EN.md). The original Northflank deployment guide is kept for historical context; the current service runs on Render.

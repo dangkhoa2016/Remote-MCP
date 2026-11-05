@@ -61,7 +61,7 @@ def dispatch(device_id: str, operation: str, args: dict) -> dict[str, Any]:
 @mcp.tool()
 def health_check() -> dict[str, str]:
     """Verify the MCP server is reachable after authenticating, without accessing devices."""
-    return {"service": "khoa-remote-workspace", "version": "0.7.1", "status": "ok",
+    return {"service": "khoa-remote-workspace", "version": "0.8.0", "status": "ok",
             "mode": "local-login-read" if MCP_TOOLS_ENABLED else "locked"}
 
 
@@ -284,6 +284,29 @@ def git_push(device_id: str, branch: str, workspace_id: str = "default") -> dict
         return {"error": "Git push disabled on gateway"}
     return dispatch(device_id, "git_push",
                     {"workspace_id": workspace_id, "branch": branch})
+
+
+@mcp.tool()
+def list_tasks(device_id: str, workspace_id: str = "default") -> dict[str, Any]:
+    """List fixed, named tasks and Agent opt-in status for an authorized workspace."""
+    return dispatch(device_id, "list_tasks", {"workspace_id": workspace_id})
+
+
+@mcp.tool()
+def run_task(device_id: str, task_id: str, target: str = "",
+             workspace_id: str = "default") -> dict[str, Any]:
+    """Run a fixed allowlisted task, never an arbitrary command or shell string.
+
+    Tasks: git_status, git_log, pytest, rspec, rails_test. Test tasks run
+    project code and require separate explicit opt-in at Gateway and Agent.
+    Results are bounded and subject to a 15-second process-group timeout.
+    """
+    if os.getenv("KRW_TASKS_ENABLED", "0") != "1":
+        return {"error": "Controlled tasks disabled on gateway"}
+    if task_id in {"pytest", "rspec", "rails_test"} and os.getenv("KRW_TEST_TASKS_ENABLED", "0") != "1":
+        return {"error": "Test tasks disabled on gateway"}
+    return dispatch(device_id, "run_task",
+                    {"workspace_id": workspace_id, "task_id": task_id, "target": target})
 
 
 @mcp.tool()

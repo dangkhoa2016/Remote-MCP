@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from agent.worker import Worker, WorkspaceError
+from agent.long_tasks import LongTaskManager
 
 _WORKSPACE_ID = re.compile(r"[a-z][a-z0-9_-]{0,39}\Z")
 MAX_WORKSPACES = 12
@@ -18,7 +19,8 @@ class WorkspaceRouter:
                  *, commands_enabled: bool = False, tests_enabled: bool = False,
                  write_enabled: bool = False, checks_enabled: bool = False,
                  git_write_enabled: bool = False, git_push_enabled: bool = False,
-                 tasks_enabled: bool = False, test_tasks_enabled: bool = False):
+                 tasks_enabled: bool = False, test_tasks_enabled: bool = False,
+                 long_tasks_enabled: bool = False):
         if extra_roots is None:
             extra_roots = {}
         if not isinstance(extra_roots, dict) or len(extra_roots) > MAX_WORKSPACES - 1:
@@ -31,6 +33,7 @@ class WorkspaceRouter:
                     not isinstance(raw_path, str) or not Path(raw_path).is_absolute()):
                 raise ValueError("Invalid workspace ID or absolute path")
             roots[workspace_id] = Path(raw_path)
+        self.long_task_manager = LongTaskManager()
         self.workers: dict[str, Worker] = {}
         for workspace_id, path in roots.items():
             worker = Worker(
@@ -38,6 +41,8 @@ class WorkspaceRouter:
                 write_enabled=write_enabled, checks_enabled=checks_enabled,
                 git_write_enabled=git_write_enabled, git_push_enabled=git_push_enabled,
                 tasks_enabled=tasks_enabled, test_tasks_enabled=test_tasks_enabled,
+                long_tasks_enabled=long_tasks_enabled,
+                long_task_manager=self.long_task_manager,
             )
             # Prevent aliases and nested roots from creating an implicit path
             # between two otherwise independently authorized workspaces.
@@ -66,6 +71,7 @@ class WorkspaceRouter:
             git_push_enabled=os.getenv("KRW_ALLOW_GIT_PUSH", "0") == "1",
             tasks_enabled=os.getenv("KRW_ALLOW_TASKS", "0") == "1",
             test_tasks_enabled=os.getenv("KRW_ALLOW_TEST_TASKS", "0") == "1",
+            long_tasks_enabled=os.getenv("KRW_ALLOW_LONG_TASKS", "0") == "1",
         )
 
     def list_workspaces(self) -> dict[str, Any]:
@@ -74,6 +80,9 @@ class WorkspaceRouter:
              "default": key == "default"}
             for key, worker in self.workers.items()
         ]}
+
+    def shutdown(self) -> None:
+        self.long_task_manager.shutdown()
 
     def dispatch(self, operation: str, args: dict[str, Any]) -> dict[str, Any]:
         if operation == "list_workspaces":

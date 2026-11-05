@@ -2,7 +2,7 @@
 
 A private OAuth-protected MCP Gateway hosted on Render, with outbound-only device Agents. The Gateway and OAuth frontend use public HTTPS; the MCP backend and Agent Relay remain bound to localhost inside the Render container.
 
-**Development release:** Phase 7 (v0.8.0) adds an opt-in controlled task runner for read-only Git queries, pytest, RSpec and Rails tests. This requires a Gateway deploy and Agent update; verify the live version with `health_check`.
+**Development release:** Phase 8 (v0.9.0) adds Agent-local long-running test tasks, bounded queues, per-task status, paginated logs and cancellation. Gateway deployment and Agent update are required; verify the live version with `health_check`.
 
 ## Connect an Agent (Linux / Google Colab)
 
@@ -32,9 +32,10 @@ You must provide a registered device ID/token and an existing dedicated workspac
 - Phase 6: `list_workspaces` and optional `workspace_id` on existing file/Git actions, `move_directory`, `delete_directory`, `git_branches`, `git_stage`, `git_unstage`, `git_commit`, `git_branch_create`, `git_branch_switch`, and `git_push`.
 - Phase 6.1: `git_branch_switch` preserves safe untracked files but refuses tracked/staged changes and untracked collisions; named workspace roots must not overlap or alias each other.
 - Phase 7: `list_tasks` and `run_task` support fixed IDs `git_status`, `git_log`, `pytest`, `rspec`, `rails_test` in a selected workspace with an optional validated test-file target.
-- Legacy `execute_command` stays disabled. Git write, Git push and test task execution have separate opt-in permissions. Arbitrary shell and force push are not exposed. Test tasks **execute project code and are not an OS sandbox**.
+- Phase 8: `start_long_task`, `get_long_task`, `read_long_task_log` and `cancel_long_task` for approved test commands. One active/two queued per Agent; max 180 seconds and 256 KiB combined logs. Results are ephemeral and workspace-scoped.
+- Legacy `execute_command` stays disabled. Git write, Git push and test execution have separate opt-in permissions. Arbitrary shell and force push are not exposed. Test tasks **execute project code and are not an OS sandbox**.
 
-File and directory writes require *both* Render and Agent flags (`KRW_WRITE_ENABLED=1` and `KRW_ALLOW_FILE_WRITES=1`). Git writes have separate flags (`KRW_GIT_WRITES_ENABLED=1`, `KRW_ALLOW_GIT_WRITES=1`), while push requires additional opt-in and an Agent-side token. Task runner settings are separately configured using `KRW_TASKS_ENABLED` / `KRW_TEST_TASKS_ENABLED` (Render), and `KRW_ALLOW_TASKS` / `KRW_ALLOW_TEST_TASKS` (Agent). Read [Phase 7](docs/PHASE7_EN.md) for safe setup and limitations.
+File and directory writes require *both* Render and Agent flags (`KRW_WRITE_ENABLED=1` and `KRW_ALLOW_FILE_WRITES=1`). Git writes have separate flags (`KRW_GIT_WRITES_ENABLED=1`, `KRW_ALLOW_GIT_WRITES=1`), while push requires additional opt-in and an Agent-side token. Task runner settings are separately configured using `KRW_TASKS_ENABLED` / `KRW_TEST_TASKS_ENABLED` (Render), and `KRW_ALLOW_TASKS` / `KRW_ALLOW_TEST_TASKS` (Agent). Phase 8 requires additional `KRW_LONG_TASKS_ENABLED` (Render) and `KRW_ALLOW_LONG_TASKS` (Agent), both default OFF. Read [Phase 8](docs/PHASE8_EN.md) for setup, safety and lifecycle constraints.
 
 ## Deployment & verification
 
@@ -47,4 +48,4 @@ python3 -m compileall -q agent gateway
 bash -n gateway/setup.sh
 ```
 
-Further details: [Deployment guide](DEPLOY_EN.md), [Agent bootstrap](docs/AGENT_BOOTSTRAP_EN.md), [Phase 4-C](docs/PHASE4C_EN.md), [Phase 5](docs/PHASE5_EN.md), [Phase 6](docs/PHASE6_EN.md), [Phase 7](docs/PHASE7_EN.md). The original Northflank deployment guide is kept for historical context; the current service runs on Render.
+Further details: [Deployment guide](DEPLOY_EN.md), [Agent bootstrap](docs/AGENT_BOOTSTRAP_EN.md), [Phase 4-C](docs/PHASE4C_EN.md), [Phase 5](docs/PHASE5_EN.md), [Phase 6](docs/PHASE6_EN.md), [Phase 7](docs/PHASE7_EN.md), [Phase 8](docs/PHASE8_EN.md). The original Northflank deployment guide is kept for historical context; the current service runs on Render.

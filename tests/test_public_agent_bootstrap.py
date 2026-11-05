@@ -50,7 +50,7 @@ def test_only_explicit_agent_files_are_downloadable(app_client):
         assert sorted(tf.getnames()) == sorted([
             'agent/__init__.py', 'agent/agent.py', 'agent/worker.py',
             'agent/git_readonly.py', 'agent/git_write.py', 'agent/workspace_routes.py',
-            'agent/task_runner.py',
+            'agent/task_runner.py', 'agent/long_tasks.py',
                 'agent/workspace_edit.py', 'agent/workspace_manage.py',
                 'agent-requirements.txt',
         ])

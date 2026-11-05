@@ -1,0 +1,3 @@
+# Agent outbound HTTP dependency only.
+httpx>=0.27,<1
+tomli>=2.2,<3; python_version < '3.11'

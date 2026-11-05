@@ -14,6 +14,7 @@ from agent.git_readonly import GitReadOnly, GitReadOnlyError
 from agent.git_write import GitWrite
 from agent.workspace_edit import WorkspaceEditor, WorkspaceEditError
 from agent.workspace_manage import WorkspaceManager
+from agent.task_runner import TaskRunner, TaskError
 
 MAX_FILE_BYTES = 262_144
 MAX_DIRECTORY_ENTRIES = 150
@@ -44,7 +45,8 @@ class WorkspaceError(Exception):
 class Worker:
     def __init__(self, root: Path, commands_enabled: bool = False, tests_enabled: bool = False,
                  write_enabled: bool = False, checks_enabled: bool = False,
-                 git_write_enabled: bool = False, git_push_enabled: bool = False):
+                 git_write_enabled: bool = False, git_push_enabled: bool = False,
+                 tasks_enabled: bool = False, test_tasks_enabled: bool = False):
         self.root = root.resolve(strict=True)
         if not self.root.is_dir():
             raise ValueError("Workspace root must be a directory")
@@ -56,6 +58,8 @@ class Worker:
         self.checks_enabled = checks_enabled
         self.git_write_enabled = git_write_enabled
         self.git_push_enabled = git_push_enabled
+        self.tasks_enabled = tasks_enabled
+        self.test_tasks_enabled = test_tasks_enabled
 
     def path(self, requested: str) -> Path:
         if not isinstance(requested, str) or len(requested) > 400 or "\x00" in requested:
@@ -352,6 +356,19 @@ class Worker:
         except WorkspaceEditError as exc:
             raise WorkspaceError(str(exc)) from exc
 
+    def _task_runner(self) -> TaskRunner:
+        return TaskRunner(self.root, self.path, tasks_enabled=self.tasks_enabled,
+                          test_tasks_enabled=self.test_tasks_enabled)
+
+    def list_tasks(self, args: dict[str, Any]) -> dict[str, Any]:
+        return self._task_runner().list_tasks()
+
+    def run_task(self, args: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return self._task_runner().run_task(args.get("task_id"), args.get("target", ""))
+        except TaskError as exc:
+            raise WorkspaceError(str(exc)) from exc
+
     def execute_command(self, args: dict[str, Any]) -> dict[str, Any]:
         if not self.commands_enabled:
             raise WorkspaceError("Command execution disabled on agent")
@@ -386,7 +403,8 @@ class Worker:
                       "git_branch_create": self.git_branch_create,
                       "git_branch_switch": self.git_branch_switch, "git_push": self.git_push,
                       "check_syntax": self.check_syntax,
-                      "execute_command": self.execute_command}
+                      "execute_command": self.execute_command, "list_tasks": self.list_tasks,
+                      "run_task": self.run_task}
         if operation not in operations:
             raise WorkspaceError("Unsupported operation")
         return operations[operation](args)

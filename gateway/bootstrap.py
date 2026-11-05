@@ -26,6 +26,7 @@ AGENT_FILES = (
     'agent/git_write.py',
     'agent/workspace_routes.py',
     'agent/task_runner.py',
+    'agent/long_tasks.py',
     'agent/workspace_edit.py',
     'agent/workspace_manage.py',
     'gateway/agent-requirements.txt',

@@ -42,33 +42,36 @@ def run() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
-    with httpx.Client(base_url=url, headers=headers, timeout=15, follow_redirects=False, trust_env=False) as client:
-        registered = False
-        while not STOP:
-            try:
-                if not registered:
-                    response = client.post("/v1/agent/register", json=info)
-                    response.raise_for_status()
-                    registered = True
-                    LOG.info("registered device=%s", device_id)
-                response = client.post("/v1/agent/poll", json={"device_id": device_id})
-                response.raise_for_status()
-                job = response.json().get("job")
-                if not job:
-                    continue
+    try:
+        with httpx.Client(base_url=url, headers=headers, timeout=15, follow_redirects=False, trust_env=False) as client:
+            registered = False
+            while not STOP:
                 try:
-                    data = worker.dispatch(job["operation"], job.get("arguments", {}))
-                    result = {"device_id": device_id, "job_id": job["job_id"], "ok": True, "data": data}
-                except (OSError, ValueError, WorkspaceError, subprocess.SubprocessError) as exc:
-                    result = {"device_id": device_id, "job_id": job["job_id"], "ok": False,
-                              "data": {}, "error": type(exc).__name__ + ": " + str(exc)[:256]}
-                response = client.post("/v1/agent/result", json=result)
-                response.raise_for_status()
-            except (httpx.HTTPError, ValueError) as exc:
-                registered = False
-                LOG.warning("relay error: %s; reconnecting", type(exc).__name__)
-                time.sleep(2)
+                    if not registered:
+                        response = client.post("/v1/agent/register", json=info)
+                        response.raise_for_status()
+                        registered = True
+                        LOG.info("registered device=%s", device_id)
+                    response = client.post("/v1/agent/poll", json={"device_id": device_id})
+                    response.raise_for_status()
+                    job = response.json().get("job")
+                    if not job:
+                        continue
+                    try:
+                        data = worker.dispatch(job["operation"], job.get("arguments", {}))
+                        result = {"device_id": device_id, "job_id": job["job_id"], "ok": True, "data": data}
+                    except (OSError, ValueError, WorkspaceError, subprocess.SubprocessError) as exc:
+                        result = {"device_id": device_id, "job_id": job["job_id"], "ok": False,
+                                  "data": {}, "error": type(exc).__name__ + ": " + str(exc)[:256]}
+                    response = client.post("/v1/agent/result", json=result)
+                    response.raise_for_status()
+                except (httpx.HTTPError, ValueError) as exc:
+                    registered = False
+                    LOG.warning("relay error: %s; reconnecting", type(exc).__name__)
+                    time.sleep(2)
 
+    finally:
+        worker.shutdown()
 
 
 if __name__ == "__main__":

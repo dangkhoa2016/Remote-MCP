@@ -61,7 +61,7 @@ def dispatch(device_id: str, operation: str, args: dict) -> dict[str, Any]:
 @mcp.tool()
 def health_check() -> dict[str, str]:
     """Verify the MCP server is reachable after authenticating, without accessing devices."""
-    return {"service": "khoa-remote-workspace", "version": "0.8.0", "status": "ok",
+    return {"service": "khoa-remote-workspace", "version": "0.9.0", "status": "ok",
             "mode": "local-login-read" if MCP_TOOLS_ENABLED else "locked"}
 
 
@@ -307,6 +307,48 @@ def run_task(device_id: str, task_id: str, target: str = "",
         return {"error": "Test tasks disabled on gateway"}
     return dispatch(device_id, "run_task",
                     {"workspace_id": workspace_id, "task_id": task_id, "target": target})
+
+
+@mcp.tool()
+def start_long_task(device_id: str, task_id: str, target: str = "",
+                    workspace_id: str = "default") -> dict[str, Any]:
+    """Queue a bounded long-running pytest/RSpec/Rails test in an authorized workspace.
+
+    Returns a job ID immediately. No arbitrary shell or flags. Execution of
+    trusted project code is NOT sandboxed; separate opt-in is required.
+    """
+    if os.getenv("KRW_LONG_TASKS_ENABLED", "0") != "1":
+        return {"error": "Long-running tasks disabled on gateway"}
+    return dispatch(device_id, "start_long_task",
+                    {"workspace_id": workspace_id, "task_id": task_id, "target": target})
+
+
+@mcp.tool()
+def get_long_task(device_id: str, job_id: str, workspace_id: str = "default") -> dict[str, Any]:
+    """Read the status of a previously queued long test task in one workspace."""
+    if os.getenv("KRW_LONG_TASKS_ENABLED", "0") != "1":
+        return {"error": "Long-running tasks disabled on gateway"}
+    return dispatch(device_id, "get_long_task", {"workspace_id": workspace_id, "job_id": job_id})
+
+
+@mcp.tool()
+def read_long_task_log(device_id: str, job_id: str, offset: int = 0,
+                       max_bytes: int = 4096, workspace_id: str = "default") -> dict[str, Any]:
+    """Read a bounded log chunk; pass next_offset to fetch subsequent output."""
+    if os.getenv("KRW_LONG_TASKS_ENABLED", "0") != "1":
+        return {"error": "Long-running tasks disabled on gateway"}
+    return dispatch(device_id, "read_long_task_log",
+                    {"workspace_id": workspace_id, "job_id": job_id,
+                     "offset": offset, "max_bytes": max_bytes})
+
+
+@mcp.tool()
+def cancel_long_task(device_id: str, job_id: str, workspace_id: str = "default") -> dict[str, Any]:
+    """Request cancellation of one queued/running long task; no arbitrary process kill."""
+    if os.getenv("KRW_LONG_TASKS_ENABLED", "0") != "1":
+        return {"error": "Long-running tasks disabled on gateway"}
+    return dispatch(device_id, "cancel_long_task",
+                    {"workspace_id": workspace_id, "job_id": job_id})
 
 
 @mcp.tool()

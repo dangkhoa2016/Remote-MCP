@@ -1,0 +1,17 @@
+name: Question
+description: General usage question / Câu hỏi sử dụng
+title: "[Question] "
+body:
+  - type: markdown
+    attributes:
+      value: "Please check the README and support guide first. Do not paste secrets or private logs."
+  - type: textarea
+    id: question
+    attributes:
+      label: Question and context
+    validations:
+      required: true
+  - type: textarea
+    id: attempted
+    attributes:
+      label: What have you tried?

@@ -1,0 +1,21 @@
+name: Documentation improvement
+description: Clarify or correct documentation / Góp ý tài liệu
+title: "[Docs] "
+body:
+  - type: input
+    id: page
+    attributes:
+      label: Document or page
+      placeholder: "README.md, README.vi.md, or docs/..."
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is confusing or incorrect?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Suggested wording or change

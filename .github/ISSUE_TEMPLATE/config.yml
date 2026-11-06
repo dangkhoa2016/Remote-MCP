@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerabilities / Báo cáo bảo mật
+    url: https://github.com/dangkhoa2016/Remote-MCP/blob/main/SECURITY.md
+    about: Report security issues privately. Never post credentials or pairing codes.
+  - name: Support and setup / Hỗ trợ cài đặt
+    url: https://github.com/dangkhoa2016/Remote-MCP/blob/main/.github/SUPPORT.md
+    about: Read the support guide before opening an issue.

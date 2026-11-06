@@ -1,0 +1,21 @@
+name: Feature request
+description: Suggest a capability / Đề xuất chức năng
+title: "[Feature] "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem and use case
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+    validations:
+      required: true
+  - type: textarea
+    id: risk
+    attributes:
+      label: Security, permissions and compatibility considerations
+      description: Explain authorization boundaries and deployment impact.

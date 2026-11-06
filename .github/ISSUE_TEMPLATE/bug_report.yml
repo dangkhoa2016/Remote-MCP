@@ -1,0 +1,33 @@
+name: Bug report
+description: Reproducible defect in Remote-MCP / Báo lỗi tái hiện được
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: "Remove access tokens, passwords, private workspace content and pairing codes. Report security vulnerabilities privately."
+  - type: input
+    id: version
+    attributes:
+      label: Source version
+      placeholder: "1.0.0"
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Sanitized steps and environment details
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
